@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Twocan Africa – Management System</title>
+<meta name="theme-color" content="#111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Twocan">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --red:#DC143C;--dark-red:#8B0000;--orange:#FF6B1A;
+  --black:#0a0a0a;--dark:#111;--card:#181818;--card2:#1e1e1e;
+  --border:#2a2a2a;--border2:#333;
+  --text:#e8e8e8;--muted:#777;--white:#fff;
+  --green:#22c55e;--blue:#3b82f6;--yellow:#f59e0b;--purple:#a855f7;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--black);color:var(--text);min-height:100vh;overflow-x:hidden}
+h1,h2,h3,h4,.brand{font-family:'Rajdhani',sans-serif}
+
+/* ═══════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════ */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 20% 50%,rgba(220,20,60,0.08) 0%,transparent 60%),
+             radial-gradient(ellipse at 80% 50%,rgba(255,107,26,0.06) 0%,transparent 60%),
+             var(--black);
+  padding:20px;
+}
+.login-card{
+  background:var(--card);border:1px solid var(--border2);border-radius:20px;
+  padding:44px 40px;width:100%;max-width:420px;
+  box-shadow:0 0 0 1px rgba(220,20,60,0.1),0 40px 80px rgba(0,0,0,0.6);
+}
+.login-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:36px}
+.login-logo img{width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 0 24px rgba(255,107,26,0.5))}
+.login-logo h2{font-size:28px;font-weight:700;letter-spacing:2px;color:var(--white);margin-top:14px}
+.login-logo p{font-size:11px;letter-spacing:3px;color:var(--orange);text-transform:uppercase;margin-top:4px}
+.login-logo .divider{width:48px;height:2px;background:linear-gradient(90deg,var(--red),var(--orange));border-radius:1px;margin-top:16px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.field-inner{position:relative}
+.field input{
+  width:100%;padding:13px 44px 13px 16px;background:#222;border:1.5px solid var(--border2);
+  border-radius:10px;font-size:15px;color:var(--white);outline:none;
+  font-family:'DM Sans',sans-serif;transition:border-color 0.2s,box-shadow 0.2s;
+}
+.field input:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,26,0.1)}
+.eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;transition:color 0.2s}
+.eye:hover{color:var(--orange)}
+.login-btn{
+  width:100%;padding:14px;background:linear-gradient(135deg,var(--dark-red),var(--red),var(--orange));
+  color:var(--white);border:none;border-radius:10px;font-size:16px;font-weight:700;
+  font-family:'Rajdhani',sans-serif;letter-spacing:1px;cursor:pointer;transition:all 0.3s;margin-top:6px;
+}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(220,20,60,0.4)}
+.login-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.login-err{color:#ff6b6b;font-size:13px;min-height:18px;text-align:center;margin-top:10px}
+.test-link{display:block;text-align:center;margin-top:18px;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.test-link:hover{color:var(--orange)}
+
+/* ═══════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════ */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.on{display:flex}
+
+/* Header */
+.hdr{
+  height:60px;background:var(--card);border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 20px rgba(0,0,0,0.4);
+}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.hdr-logo{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(255,107,26,0.4))}
+.hdr-brand strong{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--white);letter-spacing:1px}
+.hdr-brand span{display:block;font-size:9px;color:var(--orange);letter-spacing:2px;text-transform:uppercase;line-height:1}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.role-pill{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.role-admin{background:rgba(220,20,60,0.15);color:var(--red);border:1px solid rgba(220,20,60,0.3)}
+.role-accountant{background:rgba(168,85,247,0.15);color:var(--purple);border:1px solid rgba(168,85,247,0.3)}
+.role-technician{background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.3)}
+.role-sales{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3)}
+.hdr-user{font-size:12px;color:var(--muted);display:none}
+@media(min-width:640px){.hdr-user{display:block}}
+.hdr-logout{background:#2a2a2a;color:var(--muted);border:1px solid var(--border2);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all 0.2s}
+.hdr-logout:hover{background:var(--dark-red);color:var(--white);border-color:var(--red)}
+
+/* Nav */
+.nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;padding:0 16px}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{
+  padding:14px 20px;background:none;border:none;cursor:pointer;
+  font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;
+  border-bottom:2px solid transparent;transition:all 0.2s;font-family:'DM Sans',sans-serif;
+}
+.nav-btn:hover{color:var(--white)}
+.nav-btn.on{color:var(--orange);border-bottom-color:var(--orange)}
+
+/* Content */
+.content{flex:1;padding:24px 20px;max-width:1400px;margin:0 auto;width:100%}
+.sec{display:none}.sec.on{display:block}
+
+/* ═══════════════════════════════════════════
+   COMPONENTS
+═══════════════════════════════════════════ */
+/* Section header */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.sec-title{display:flex;align-items:center;gap:10px}
+.sec-bar{width:3px;height:22px;border-radius:2px}
+.sec-title h2{font-size:22px;font-weight:700;color:var(--white)}
+.count-pill{background:#222;border:1px solid var(--border2);color:var(--orange);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.red::before{background:linear-gradient(90deg,var(--red),var(--orange))}
+.stat-card.green::before{background:linear-gradient(90deg,#16a34a,var(--green))}
+.stat-card.blue::before{background:linear-gradient(90deg,#1d4ed8,var(--blue))}
+.stat-card.yellow::before{background:linear-gradient(90deg,#b45309,var(--yellow))}
+.stat-card.purple::before{background:linear-gradient(90deg,#7e22ce,var(--purple))}
+.stat-label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.stat-val{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--white);line-height:1}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* Form card */
+.form-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:24px}
+.form-card h4{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.f{display:flex;flex-direction:column;gap:7px}
+.f label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.f input,.f select,.f textarea{
+  padding:11px 13px;background:#222;border:1.5px solid var(--border2);
+  border-radius:8px;font-size:14px;color:var(--white);outline:none;
+  font-family:'DM Sans',sans-serif;transition:border-color 0.2s;-webkit-appearance:none;
+}
+.f select option{background:#222}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--orange)}
+.f textarea{min-height:80px;resize:vertical}
+.sub-btn{
+  padding:11px 26px;background:linear-gradient(135deg,var(--dark-red),var(--orange));
+  color:var(--white);border:none;border-radius:8px;font-size:13px;font-weight:700;
+  font-family:'Rajdhani',sans-serif;letter-spacing:1px;cursor:pointer;transition:all 0.3s;
+  align-self:flex-end;white-space:nowrap;
+}
+.sub-btn:hover{transform:translateY(-1px);box-shadow:0 5px 20px rgba(220,20,60,0.3)}
+.sub-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.sub-btn.green{background:linear-gradient(135deg,#16a34a,var(--green))}
+.sub-btn.blue{background:linear-gradient(135deg,#1d4ed8,var(--blue))}
+
+/* Date filter bar */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.filter-bar label{font-size:12px;color:var(--muted);font-weight:600}
+.filter-bar input{padding:8px 12px;background:#222;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;color:var(--white);outline:none;font-family:'DM Sans',sans-serif}
+.filter-bar input:focus{border-color:var(--orange)}
+.filter-btn{padding:8px 16px;background:#222;border:1.5px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.filter-btn:hover,.filter-btn.on{background:var(--orange);color:var(--white);border-color:var(--orange)}
+.export-btn{padding:8px 16px;background:#1a2a1a;border:1px solid #2a5a2a;border-radius:8px;font-size:12px;font-weight:600;color:var(--green);cursor:pointer;margin-left:auto;transition:all 0.2s}
+.export-btn:hover{background:#2a5a2a}
+
+/* Table */
+.tbl-wrap{background:var(--card2);border:1px solid var(--border);border-radius:14px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:600px}
+thead{background:#0d0d0d}
+th{padding:12px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--orange);letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--border2)}
+td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,107,26,0.03)}
+.mono{font-family:monospace;font-size:12px;color:#aaa}
+.empty-row{text-align:center;padding:48px;color:var(--muted);font-size:14px}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;white-space:nowrap}
+.b-pending{background:#332800;color:#f59e0b;border:1px solid #4a3800}
+.b-in-progress{background:#001a3a;color:#60a5fa;border:1px solid #003080}
+.b-completed{background:#0a2a0a;color:#4ade80;border:1px solid #1a5a1a}
+.b-active{background:#0a2a0a;color:#4ade80;border:1px solid #1a5a1a}
+.b-inactive{background:#3a0a0a;color:#f87171;border:1px solid #5a1a1a}
+.b-reserved{background:#332800;color:#f59e0b;border:1px solid #4a3800}
+.b-paid{background:#0a2a0a;color:#4ade80;border:1px solid #1a5a1a}
+.b-unpaid{background:#3a0a0a;color:#f87171;border:1px solid #5a1a1a}
+.b-partial{background:#332800;color:#f59e0b;border:1px solid #4a3800}
+.b-income{background:#0a2a0a;color:#4ade80;border:1px solid #1a5a1a}
+.b-expense{background:#3a0a0a;color:#f87171;border:1px solid #5a1a1a}
+.b-overdue{background:#3a0a1a;color:#f472b6;border:1px solid #5a1a3a}
+
+/* Action buttons */
+.acts{display:flex;gap:5px;flex-wrap:wrap}
+.act-edit{background:#1a2a3a;color:#60a5fa;border:1px solid #2a4a6a;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;transition:all 0.2s}
+.act-edit:hover{background:#2a4a6a}
+.act-del{background:#3a1a1a;color:#f87171;border:1px solid #5a2a2a;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;transition:all 0.2s}
+.act-del:hover{background:#5a2a2a}
+.act-view{background:#1a2a1a;color:#4ade80;border:1px solid #2a5a2a;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;transition:all 0.2s}
+.act-view:hover{background:#2a5a2a}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-bg.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:28px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.6)}
+.modal h3{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--white);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border2)}
+.modal-foot{display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.m-cancel{flex:1;padding:11px;background:#222;color:var(--muted);border:1px solid var(--border2);border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif}
+.m-save{flex:2;padding:11px;background:linear-gradient(135deg,var(--dark-red),var(--orange));color:var(--white);border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
+
+/* Radio history modal */
+.radio-history{background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:20px;margin-top:16px}
+.radio-history h4{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--orange);margin-bottom:14px}
+.history-line{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.history-line:last-child{border-bottom:none}
+.history-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.history-dot.repair{background:var(--blue)}
+.history-dot.sale{background:var(--green)}
+.history-info{flex:1}
+.history-info strong{font-size:13px;color:var(--white);display:block}
+.history-info span{font-size:12px;color:var(--muted)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;padding:13px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:1000;display:none;max-width:320px;border-left:3px solid}
+.toast.ok{background:#0a2a0a;color:#4ade80;border-color:#4ade80;box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+.toast.err{background:#3a0a0a;color:#f87171;border-color:#f87171;box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+
+/* Net badge */
+#netBadge{position:fixed;bottom:24px;left:24px;background:#332800;color:#f59e0b;border:1px solid #4a3800;padding:9px 16px;border-radius:20px;font-size:12px;font-weight:600;display:none;z-index:400}
+
+/* Finance sub-tabs */
+.sub-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.sub-tab{padding:8px 16px;background:#222;border:1.5px solid var(--border2);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.2s;font-family:'DM Sans',sans-serif}
+.sub-tab:hover{color:var(--white)}
+.sub-tab.on{background:rgba(255,107,26,0.15);color:var(--orange);border-color:var(--orange)}
+.sub-sec{display:none}.sub-sec.on{display:block}
+
+/* P&L */
+.pl-table{width:100%;border-collapse:collapse}
+.pl-table td,.pl-table th{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}
+.pl-table th{font-size:11px;font-weight:700;color:var(--orange);letter-spacing:1px;text-transform:uppercase}
+.pl-total{font-weight:700;font-size:14px;color:var(--white)}
+.pl-profit{color:var(--green);font-weight:700}
+.pl-loss{color:#f87171;font-weight:700}
+
+/* Search box */
+.search-box{display:flex;gap:10px;margin-bottom:20px;align-items:center}
+.search-box input{flex:1;padding:12px 16px;background:#222;border:1.5px solid var(--border2);border-radius:10px;font-size:14px;color:var(--white);outline:none;font-family:'DM Sans',sans-serif}
+.search-box input:focus{border-color:var(--orange)}
+.search-box button{padding:12px 22px;background:linear-gradient(135deg,var(--dark-red),var(--orange));color:var(--white);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px}
+
+@media(max-width:600px){
+  .hdr{padding:0 12px;height:54px}
+  .hdr-brand strong{font-size:15px}
+  .content{padding:14px 12px}
+  .form-card{padding:14px}
+  .fg{grid-template-columns:1fr}
+  .sub-btn{width:100%}
+  .stats{grid-template-columns:1fr 1fr}
+  th,td{padding:9px 10px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div id="netBadge">⚠️ Offline</div>
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════
+     LOGIN
+════════════════════════════════ -->
+<div id="loginWrap" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <img id="loginLogo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwLjAwIDAuMDAgODAwLjAwIDgwMC4wMCIgd2lkdGg9IjgwMCIgaGVpZ2h0PSI4MDAiPgo8ZyBzdHJva2Utd2lkdGg9IjIuMDAiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJidXR0Ij4KPHBhdGggc3Ryb2tlPSIjN2I3NDEwIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNzEzLjA0IDQ3Mi4xMyAgIEwgNzExLjg5IDQ3Mi40MiAgIFEgNzExLjQyIDQ3Mi41NCA3MTAuOTcgNDcyLjM3ICAgQyA2NzkuNTcgNDYxLjE0IDY0OC45NiA0NTEuODIgNjE2LjE2IDQ0OC4wNSAgIEMgNjA0LjU0IDQ0Ni43MSA1OTEuNTQgNDQ2LjgyIDU4MC4yNyA0NTAuNDUiLz4KPHBhdGggc3Ryb2tlPSIjNzUxMzE0IiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTgwLjI3IDQ1MC40NSAgIEwgNTcyLjYzIDQ1Mi44OCIvPgo8cGF0aCBzdHJva2U9IiM3NjMyMWEiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA1NzIuNjMgNDUyLjg4ICAgQyA1NjEuODYgNDUxLjc5IDU1Mi40MyA0NTIuMzQgNTQ0LjA4IDQ2MC4wMSAgIFEgNTQzLjcyIDQ2MC4zNCA1NDMuNzIgNDYwLjgzICAgUSA1NDMuNzcgNDY0LjU5IDU0Mi40NyA0NjcuNjAiLz4KPHBhdGggc3Ryb2tlPSIjN2Q3MjYyIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTQyLjQ3IDQ2Ny42MCAgIEMgNTM0LjQ5IDQ3Ni43MyA1MjMuOTQgNDgzLjM1IDUxMi4wOCA0ODUuNTkgICBDIDUwNy4yMSA0ODYuNTAgNTAxLjYwIDQ4Ny4zMiA0OTcuMzkgNDg4Ljc4ICAgUSA0NzQuMDIgNDk2LjkxIDQ2MS43MyA1MjAuMjMgICBRIDQ2MC4zNCA1MjIuODggNDYwLjA4IDUyNC40OSAgIEEgMS4xMCAxLjA5IDIyLjMgMCAwIDQ2MC41NCA1MjUuNTggICBRIDQ2Mi4yOSA1MjYuODAgNDY1LjY5IDUyNy4wMyAgIEMgNDg0LjY0IDUyOC4zNSA1MDAuNjQgNTI4LjMyIDUxOC43OSA1MjQuOTYgICBRIDUzMS41MCA1MjIuNjEgNTQ0LjA1IDUxOS40NiAgIEMgNTU0LjY3IDUxNi44MCA1NjUuNDggNTEzLjQwIDU3MS4yMiA1MDMuMjEgICBRIDU3Mi43NCA1MDAuNTAgNTc1LjMxIDQ5MS44MSIvPgo8cGF0aCBzdHJva2U9IiM3NjMyMWEiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA1NzUuMzEgNDkxLjgxICAgUSA1NzYuOTEgNDg5LjA1IDU3OC41NCA0ODcuOTIiLz4KPHBhdGggc3Ryb2tlPSIjNzUxMzE0IiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTc4LjU0IDQ4Ny45MiAgIEwgNjAyLjcxIDUyMS4zNiIvPgo8cGF0aCBzdHJva2U9IiM3ZDcyNjIiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSAxMzUuMzEgNTI0LjM2ICAgQyAxNTEuNDggNTI4Ljk3IDE3Mi4wNiA1MzMuNDggMTg4LjgzIDUzMC40NCAgIEMgMTk2Ljg3IDUyOC45OSAyMDcuMTIgNTIyLjI1IDE5OS44MyA1MTMuMjAgICBRIDE5Mi42NSA1MDQuMjggMTgyLjU0IDQ5OC45MiAgIFEgMTgyLjEwIDQ5OC42OCAxODEuNjEgNDk4Ljc3ICAgUSAxODEuMjggNDk4LjgzIDE4MS4wMiA0OTguNjQgICBBIDEuMTAgMS4wOSAtMzUuMSAwIDAgMTgwLjAzIDQ5OC40NyAgIFEgMTY1LjA1IDUwMy4xMSAxNDkuNDEgNTAxLjM0ICAgUSAxNDguOTMgNTAxLjI4IDE0OC43OCA1MDEuNzQgICBMIDE0OC42NyA1MDIuMDQiLz4KPHBhdGggc3Ryb2tlPSIjNDAzYzNlIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gMTU0LjQxIDQ2My40OCAgIEMgMTU0Ljc2IDQ2Ni45NSAxNjUuNjcgNDcwLjkwIDE2OS4wMCA0NzEuNzYgICBRIDE4OC43NyA0NzYuODEgMjA3Ljk1IDQ3My4zMSAgIEMgMjE0Ljg0IDQ3Mi4wNSAyMjQuMjEgNDY4LjgwIDIyNi4yNyA0NjEuODAgICBRIDIyNi40MiA0NjEuMjkgMjI2Ljk0IDQ2MS4yMyAgIFEgMjMwLjExIDQ2MC44NSAyMzMuMDggNDYyLjA0ICAgQSAxLjM4IDEuMzggMC4wIDAgMCAyMzQuNzYgNDYxLjUwICAgQyAyMzYuOTkgNDU4LjAxIDIyMi41NiA0NTcuMzMgMjIxLjc0IDQ1Ni42NCAgIFEgMjIxLjQ4IDQ1Ni40MiAyMjEuMjIgNDU2LjY1ICAgTCAyMjAuMzggNDU3LjQwIi8+CjxwYXRoIHN0cm9rZT0iI2U4NDIyYiIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDU4NS44OCA0NTguNTEgICBDIDU3NS4zNiA0NzMuOTAgNTg2LjYxIDQ4OC43MyA2MDAuODEgNDk1LjI1ICAgQyA2MTkuOTQgNTA0LjAyIDY0My4wNyA1MDQuNDUgNjY0LjE4IDUwNi44NSAgIEMgNjczLjY0IDUwNy45MyA2ODIuNzMgNTEwLjUyIDY5Mi4wMSA1MTIuNzMgICBDIDY5Ny44NCA1MTQuMTIgNzA3LjgzIDUxNC4wNSA3MTUuODggNTE2LjY3ICAgUSA3MjMuMTIgNTE5LjAxIDczMC44NCA1MTkuNDkgICBBIDAuNTUgMC41NSAwLjAgMCAwIDczMS4yNSA1MTguNTUgICBDIDczMC40OSA1MTcuODMgNzI5LjY0IDUxNi45MSA3MjguNzIgNTE2LjM1ICAgQyA2OTYuMjggNDk2LjgwIDY1OC4zMiA0OTAuNTAgNjIyLjA2IDQ4MS43MiAgIFEgNjE5LjE1IDQ4MS4wMiA2MTcuOTggNDc4Ljc5Ii8+CjxwYXRoIHN0cm9rZT0iI2VmODE3MiIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDcyMC4wMSA1MDUuNDUgICBMIDc2Ny42MiA1MzMuNzkiLz4KPHBhdGggc3Ryb2tlPSIjNzUxMzE0IiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNzY3LjYyIDUzMy43OSAgIEwgNzY1LjcxIDUzOC40NiIvPgo8cGF0aCBzdHJva2U9IiNlODQyMmIiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA1NzguNTQgNDg3LjkyICAgTCA1NzIuNjMgNDUyLjg4Ii8+CjxwYXRoIHN0cm9rZT0iI2YwYTE3OSIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDU3NS4zMSA0OTEuODEgICBMIDU1NS4xOSA0ODMuMDUiLz4KPHBhdGggc3Ryb2tlPSIjNzYzMjFhIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTU1LjE5IDQ4My4wNSAgIEMgNTYwLjM0IDQ3OS45MCA1NzIuNTEgNDY3LjM5IDU2My44NiA0NjIuMDYgICBDIDU1Ny43MyA0NTguMjggNTUwLjY2IDQ2OS44MSA1NDYuNzIgNDczLjk4Ii8+CjxwYXRoIHN0cm9rZT0iI2YwYTE3OSIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDU0Ni43MiA0NzMuOTggICBRIDU0NS44MCA0NzAuNDggNTQyLjQ3IDQ2Ny42MCIvPgo8cGF0aCBzdHJva2U9IiM3Yjc0MTAiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA3MzIuNTYgNDgyLjE2ICAgTCA3MzEuNzYgNDg2LjczICAgQSAxLjc5IDEuNzkgMC4wIDAgMSA3MzAuMDIgNDg4LjIwICAgTCA3MTguMTYgNDg4LjM1ICAgUSA3MTcuNjUgNDg4LjM2IDcxNy4yNiA0ODguNjkgICBDIDcxMS45NyA0OTMuMjMgNzE2LjE3IDUwMS4yOCA3MjIuMjAgNTAxLjU2Ii8+CjxwYXRoIHN0cm9rZT0iI2Y1ZTM2ZiIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDcyMi4yMCA1MDEuNTYgICBRIDcyMC41MCA1MDMuMTAgNzIwLjAxIDUwNS40NSIvPgo8cGF0aCBzdHJva2U9IiNlZDg0MjEiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA3MjAuMDEgNTA1LjQ1ICAgQyA2OTYuMDYgNDk0LjQxIDY2OC40NyA0ODMuMzIgNjQxLjI2IDQ3OS4yNiAgIFEgNjMzLjAxIDQ3OC4wMyA2MTcuOTggNDc4Ljc5Ii8+CjxwYXRoIHN0cm9rZT0iI2VlYTMyNyIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDYxNy45OCA0NzguNzkgICBRIDYxNi4wMSA0NzguNzEgNjEzLjY2IDQ3OC44NCAgIEMgNjAzLjk3IDQ3OS4zOSA1OTEuMDUgNDY2LjQwIDU4NS44OCA0NTguNTEiLz4KPHBhdGggc3Ryb2tlPSIjZWQ4NDIxIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTg1Ljg4IDQ1OC41MSAgIEwgNTgwLjI3IDQ1MC40NSIvPgo8cGF0aCBzdHJva2U9IiM3ZDcyNjIiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA1NTUuMTkgNDgzLjA1ICAgUSA1NDguNTkgNDc5LjMyIDU0Ni43MiA0NzMuOTgiLz4KPHBhdGggc3Ryb2tlPSIjNDAzYzNlIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gMTY3LjE5IDQ1NC42MCAgIFEgMTY2LjA5IDQ1OS43NyAxNTguNjQgNDU4Ljc4Ii8+CjxwYXRoIHN0cm9rZT0iIzdkNzI2MiIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDc2Ny42MiA1MzMuNzkgICBRIDc1My4yOSA1MDYuMTUgNzIyLjIwIDUwMS41NiIvPgo8cGF0aCBzdHJva2U9IiM0MDNjM2UiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSAxOTAuOTkgNTQwLjE1ICAgQyAxODguNTggNTQ0LjU5IDE5My42NCA1NDYuNTQgMTk3LjI1IDU0Ni42OSAgIFEgMjA3LjAwIDU0Ny4xMCAyMTcuNjggNTQ3LjMxICAgQSAxLjA0IDEuMDQgMC4wIDAgMCAyMTguNjIgNTQ1Ljc5ICAgUSAyMTUuNjggNTQwLjEyIDIxMS44MyA1MzQuNDMgICBRIDIwOS43OCA1MzEuNDAgMjA2LjA4IDUzMi44MiAgIEMgMjAxLjYwIDUzNC41NSAxOTIuNjAgNTM3LjE2IDE5MC45OSA1NDAuMTUiLz4KPC9nPgo8cGF0aCBmaWxsPSIjMDMwMzAzIiBkPSIgICBNIDcxMy4wNCA0NzIuMTMgICBMIDcxMS44OSA0NzIuNDIgICBRIDcxMS40MiA0NzIuNTQgNzEwLjk3IDQ3Mi4zNyAgIEMgNjc5LjU3IDQ2MS4xNCA2NDguOTYgNDUxLjgyIDYxNi4xNiA0NDguMDUgICBDIDYwNC41NCA0NDYuNzEgNTkxLjU0IDQ0Ni44MiA1ODAuMjcgNDUwLjQ1ICAgTCA1NzIuNjMgNDUyLjg4ICAgQyA1NjEuODYgNDUxLjc5IDU1Mi40MyA0NTIuMzQgNTQ0LjA4IDQ2MC4wMSAgIFEgNTQzLjcyIDQ2MC4zNCA1NDMuNzIgNDYwLjgzICAgUSA1NDMuNzcgNDY0LjU5IDU0Mi40NyA0NjcuNjAgICBDIDUzNC40OSA0NzYuNzMgNTIzLjk0IDQ4My4zNSA1MTIuMDggNDg1LjU5ICAgQyA1MDcuMjEgNDg2LjUwIDUwMS42MCA0ODcuMzIgNDk3LjM5IDQ4OC43OCAgIFEgNDc0LjAyIDQ5Ni45MSA0NjEuNzMgNTIwLjIzICAgUSA0NjAuMzQgNTIyLjg4IDQ2MC4wOCA1MjQuNDkgICBBIDEuMTAgMS4wOSAyMi4zIDAgMCA0NjAuNTQgNTI1LjU4ICAgUSA0NjIuMjkgNTI2LjgwIDQ2NS42OSA1MjcuMDMgICBDIDQ4NC42NCA1MjguMzUgNTAwLjY0IDUyOC4zMiA1MTguNzkgNTI0Ljk2ICAgUSA1MzEuNTAgNTIyLjYxIDU0NC4wNSA1MTkuNDYgICBDIDU1NC42NyA1MTYuODAgNTY1LjQ4IDUxMy40MCA1NzEuMjIgNTAzLjIxICAgUSA1NzIuNzQgNTAwLjUwIDU3NS4zMSA0OTEuODEgICBRIDU3Ni45MSA0ODkuMDUgNTc4LjU0IDQ4Ny45MiAgIEwgNjAyLjcxIDUyMS4zNiAgIFEgNjAwLjkyIDUyMS4wMiA1OTguNDEgNTIwLjk4ICAgQyA1OTEuNzUgNTIwLjg2IDU4NC43OCA1MTkuNDggNTc4LjEzIDUxOC43MiAgIEMgNTcyLjg2IDUxOC4xMiA1NjQuMDAgNTE3LjMwIDU1OC45NyA1MTkuMTUgICBDIDUzNS4wOSA1MjcuOTQgNTEyLjQ2IDUzMy42NSA0ODcuMDEgNTMxLjEyICAgQyA0NTYuMzYgNTI4LjA4IDQyMi44MCA1MjcuMDIgMzk0LjA3IDUzOS4zNCAgIEMgMzc0LjU3IDU0Ny42OSAzNTQuMjEgNTYxLjA2IDMzMi40MyA1NjIuNjcgICBDIDMxMy42NiA1NjQuMDYgMjkzLjQ1IDU2MC45NSAyNzQuMzQgNTU5LjA1ICAgQyAyNjIuOTYgNTU3LjkxIDI1MC45OCA1NTguMzcgMjM5LjI0IDU1Ny45NiAgIEMgMjI3LjI2IDU1Ny41NCAyMTAuNjggNTU4LjIwIDE5OC4wMCA1NTYuMTEgICBDIDE5My4yOSA1NTUuMzMgMTg5LjU0IDU0OS45MCAxODYuMTIgNTQ2LjgwICAgUSAxODUuNzUgNTQ2LjQ2IDE4NS4yNCA1NDYuNDggICBDIDE4MS4wMCA1NDYuNTkgMTc2LjM5IDU0Ny4wMSAxNzIuNTYgNTQ1LjAxICAgQyAxNjguMjkgNTQyLjc3IDE2Mi4yOSA1MzUuODAgMTU3LjgxIDUzNi41MiAgIEMgMTMyLjA0IDU0MC42OCAxMDQuODggNTQ2Ljk2IDc5LjQ5IDU0NS40NiAgIFEgNzMuNDQgNTQ1LjEwIDY2LjIxIDU0Mi4xMyAgIFEgNjMuOTEgNTQxLjE4IDYxLjY1IDU0MS4xOSAgIFEgMzkuMjYgNTQxLjMzIDE2LjkwIDU0MS4yNyAgIEMgMTQuMDggNTQxLjI2IDExLjkwIDU0MC42MSAxMi4yOSA1MzcuMzIgICBDIDEyLjY3IDUzNC4xMSAzMS43MyA1MzIuNzUgMzQuNzcgNTMyLjUyICAgUSA0OS45OSA1MzEuMzkgNjQuNDAgNTI2LjY2ICAgUSA3NC44OCA1MjMuMjIgNzcuODggNTIyLjY0ICAgQyA5NS44MiA1MTkuMTYgMTE0LjA4IDUyMi4zMSAxMzEuODkgNTI0LjY5ICAgQyAxMzMuMjcgNTI0Ljg3IDEzNC4xMyA1MjQuMTYgMTM1LjMxIDUyNC4zNiAgIEMgMTUxLjQ4IDUyOC45NyAxNzIuMDYgNTMzLjQ4IDE4OC44MyA1MzAuNDQgICBDIDE5Ni44NyA1MjguOTkgMjA3LjEyIDUyMi4yNSAxOTkuODMgNTEzLjIwICAgUSAxOTIuNjUgNTA0LjI4IDE4Mi41NCA0OTguOTIgICBRIDE4Mi4xMCA0OTguNjggMTgxLjYxIDQ5OC43NyAgIFEgMTgxLjI4IDQ5OC44MyAxODEuMDIgNDk4LjY0ICAgQSAxLjEwIDEuMDkgLTM1LjEgMCAwIDE4MC4wMyA0OTguNDcgICBRIDE2NS4wNSA1MDMuMTEgMTQ5LjQxIDUwMS4zNCAgIFEgMTQ4LjkzIDUwMS4yOCAxNDguNzggNTAxLjc0ICAgTCAxNDguNjcgNTAyLjA0ICAgTCAxNDguMTUgNTAwLjcwICAgQSAxLjQzIDEuMzkgLTg4LjEgMCAwIDE0Ny40NyA0OTkuOTUgICBRIDE0NS4zNCA0OTguOTEgMTQ0LjY3IDQ5Ni43MSAgIFEgMTQ0LjUwIDQ5Ni4xNyAxNDQuODcgNDk1Ljc1ICAgUSAxNTEuMTIgNDg4LjUwIDE1Ny41MSA0ODEuNTMgICBDIDE2MS4xMSA0NzcuNjEgMTU0LjAxIDQ2OC41MCAxNTEuMTEgNDY2LjQwICAgQyAxNDguMjAgNDY0LjMwIDE0My40OSA0NjMuMTcgMTM5Ljc2IDQ2MS41NyAgIEEgMS40OSAxLjQ5IDAuMCAwIDEgMTM5LjkxIDQ1OC43NyAgIEMgMTQ0LjExIDQ1Ny41MCAxNDkuNTQgNDYwLjcxIDE1Mi43NSA0NjMuMjEgICBRIDE1My4xMyA0NjMuNTEgMTUzLjYxIDQ2My41MCAgIEwgMTU0LjQxIDQ2My40OCAgIEMgMTU0Ljc2IDQ2Ni45NSAxNjUuNjcgNDcwLjkwIDE2OS4wMCA0NzEuNzYgICBRIDE4OC43NyA0NzYuODEgMjA3Ljk1IDQ3My4zMSAgIEMgMjE0Ljg0IDQ3Mi4wNSAyMjQuMjEgNDY4LjgwIDIyNi4yNyA0NjEuODAgICBRIDIyNi40MiA0NjEuMjkgMjI2Ljk0IDQ2MS4yMyAgIFEgMjMwLjExIDQ2MC44NSAyMzMuMDggNDYyLjA0ICAgQSAxLjM4IDEuMzggMC4wIDAgMCAyMzQuNzYgNDYxLjUwICAgQyAyMzYuOTkgNDU4LjAxIDIyMi41NiA0NTcuMzMgMjIxLjc0IDQ1Ni42NCAgIFEgMjIxLjQ4IDQ1Ni40MiAyMjEuMjIgNDU2LjY1ICAgTCAyMjAuMzggNDU3LjQwICAgQyAyMjAuMTMgNDU2LjI1IDIxOS42NCA0NTUuMzkgMjE4LjQ2IDQ1NC45MyAgIEMgMTk5LjgyIDQ0Ny43MyAxODAuMjMgNDQwLjQwIDE2OC4yNCA0MjYuMDIgICBRIDE2Ni45MiA0MjQuNDQgMTY2LjI0IDQyMi42MCAgIEEgMC43OSAwLjc4IDEuMCAwIDEgMTY3LjI4IDQyMS42MCAgIFEgMTY5LjQwIDQyMi40OCAxNzEuMzYgNDIzLjg2ICAgQyAxOTUuODUgNDQxLjAyIDIyMS45NyA0NTAuNDIgMjUxLjA4IDQ1NS4wOCAgIEMgMjUyLjg2IDQ1NS4zNyAyNTQuMzggNDU1LjE5IDI1NS41NyA0NTMuOTQgICBBIDIuMDAgMS45OSAzNS40IDAgMCAyNTUuMDMgNDUwLjc4ICAgQyAyMzIuMTEgNDM5LjE4IDIwNC42NCA0MjYuODUgMTk2Ljk3IDM5OS43NiAgIEMgMTk1Ljk0IDM5Ni4xMyAyMDEuMDMgMzk1Ljk2IDIwMi45OCAzOTguMDIgICBDIDIyMy41NCA0MTkuODEgMjQzLjMyIDQzOC4zOCAyNzMuNzggNDQ2LjM4ICAgUSAyNzYuMzQgNDQ3LjA1IDI3Ny4yNyA0NDUuMTggICBBIDIuMjcgMi4yNiAzMS43IDAgMCAyNzYuNjAgNDQyLjM3ICAgUSAyNzAuODMgNDM4LjAzIDI2NS40MCA0MzMuODYgICBDIDI0NC45NCA0MTguMTQgMjM1LjM3IDM5Ny4wOSAyMzIuNjQgMzcxLjY3ICAgQSAwLjk2IDAuOTYgMC4wIDAgMSAyMzQuMTMgMzcwLjc3ICAgQyAyMzUuMDMgMzcxLjM4IDIzNi41MCAzNzIuNjMgMjM3LjEwIDM3My42MiAgIFEgMjQzLjU2IDM4NC4yOCAyNTcuNjggNDA2LjA2ICAgUSAyNzEuMjcgNDI3LjAyIDI4OS44MiA0NDEuMDcgICBDIDI5MS4xMyA0NDIuMDcgMjkyLjg3IDQ0Mi4wNCAyOTMuOTQgNDQwLjg4ICAgUSAyOTQuMzEgNDQwLjQ3IDI5NC4xNyA0MzkuOTQgICBDIDI5My43NiA0MzguMzYgMjkzLjMyIDQzNi42MCAyOTIuMzAgNDM1LjI3ICAgUSAyNzUuMjcgNDEzLjA2IDI2NS4wNCAzODYuOTUgICBRIDI2NC41OSAzODUuODAgMjY0LjUzIDM4NS4wMiAgIEEgMC44MSAwLjgxIDAuMCAwIDEgMjY1Ljk5IDM4NC40OCAgIEMgMjc4LjIwIDQwMS4yNCAyOTAuMzUgNDIwLjA3IDMwNC41MyA0MzMuNDkgICBDIDMwOS4wMSA0MzcuNzMgMzExLjM0IDQzMy42NCAzMTQuMDIgNDI5Ljc5ICAgUSAzMTkuNDIgNDIyLjA0IDMzMC4wMCA0MjMuNDAgICBDIDMzNi40NyA0MjQuMjQgMzM3LjMwIDQxMy4zMiAzNDUuMzkgNDEzLjUyICAgQyAzNTQuNzAgNDEzLjc2IDM1NS4wNyA0MTAuOTMgMzYwLjA0IDQwNC4yOSAgIEMgMzYxLjI1IDQwMi42NyAzNjIuNzEgNDAyLjQwIDM2NC44MyA0MDIuNTIgICBRIDM3MS4wMyA0MDIuODYgMzc3LjAyIDQwMS4wOSAgIEMgMzg4LjAyIDM5Ny44MyAzOTAuNDIgMzg5LjIyIDM5Mi4xNyAzNzguODggICBBIDMuMTAgMy4wOCAtNy4xIDAgMSAzOTMuOTggMzc2LjU3ICAgTCA0MDQuMjkgMzcyLjAzICAgQSAxLjI3IDEuMjUgODcuMCAwIDAgNDA0Ljk5IDM3MS4yNCAgIEMgNDA2LjkwIDM2NC43NCA0MDMuNTEgMzU5LjMyIDQxMC42NiAzNTQuNDcgICBBIDEuNjcgMS42MyAyNi43IDAgMSA0MTEuNTUgMzU0LjE5ICAgQyA0MTkuMTQgMzU0LjA4IDQyNS42MiAzNTcuODYgNDMxLjczIDM2MS44MSAgIEMgNDMzLjQ0IDM2Mi45MiA0MzUuMDQgMzYzLjE3IDQzNi42MSAzNjEuODggICBBIDIuNjMgMi42MyAwLjAgMCAwIDQzNy40NiAzNTkuMDcgICBRIDQzNC44MCAzNTAuMzYgNDMyLjAyIDM0MS4zNSAgIEMgNDMwLjc1IDMzNy4yNSA0MzEuNDMgMzM0LjIxIDQzNi40NyAzMzUuMjQgICBDIDQ0Ni4wNCAzMzcuMjAgNDUwLjU3IDM0NC4xMyA0NTYuNDggMzUxLjAzICAgQyA0NTguODIgMzUzLjc3IDQ2NC43OCAzNTguOTggNDY4LjY2IDM1OC4zNSAgIEMgNDcxLjQ4IDM1Ny44OSA0NzEuODYgMzU1LjA2IDQ3MS4xOCAzNTIuNjAgICBRIDQ2OS4wNCAzNDQuOTIgNDY3LjU0IDMzNy4xMiAgIEMgNDY1Ljg5IDMyOC41MSA0NjYuNTEgMzE5LjIzIDQ2Ni41MiAzMTAuMzIgICBRIDQ2Ni41MiAzMDkuNTkgNDY3LjI4IDMwNy45NSAgIEMgNDY5LjkzIDMwMi4yMSA0NzQuNTkgMzA0Ljg2IDQ3Ny4wMiAzMDguOTIgICBDIDQ4NC4yNyAzMjEuMDAgNDg2LjY1IDMzMS42NiA0ODkuNTAgMzQ1Ljc0ICAgUSA0ODkuOTcgMzQ4LjA1IDQ5Mi4wNiAzNDkuNDAgICBBIDEuMTMgMS4xMyAwLjAgMCAwIDQ5Mi45MiAzNDkuNTQgICBDIDUwMC40OCAzNDcuNzMgNDk5LjA2IDMzOC4xMCA0OTguNjAgMzMxLjc1ICAgQyA0OTcuMDUgMzEwLjM2IDUwMS43MiAyODkuMTkgNTEyLjE2IDI3MC4xNyAgIFEgNTE0LjEzIDI2Ni41OCA1MTYuMjcgMjY0LjI5ICAgQSAxLjExIDEuMDkgLTY0LjggMCAxIDUxNy4xNiAyNjMuOTYgICBDIDUyMS43NCAyNjQuNDcgNTI0LjQwIDI3Ni4xOSA1MjkuNzMgMjcwLjEzICAgUSA1MzAuMDggMjY5LjczIDUzMC4wNSAyNjkuMjAgICBDIDUyOS40OSAyNTcuMzMgNTMwLjg5IDI0Ni40MyA1MzguNzggMjM3LjA0ICAgQSAxLjMzIDEuMzMgMC4wIDAgMSA1NDEuMDYgMjM3LjQ3ICAgQyA1NDYuMDUgMjUyLjA4IDU1My4zNCAyNjYuMjYgNTU2LjU3IDI4MS4zOSAgIEMgNTU5Ljc3IDI5Ni4zNSA1NTkuMDQgMzE0LjM5IDU1OC42NCAzMzAuMjIgICBBIDEuNzAgMS42NiAtNjEuNiAwIDAgNTU4LjkxIDMzMS4xNyAgIEMgNTYyLjMyIDMzNi4zNyA1NjUuNjcgMzM4LjkxIDU2NC44MiAzNDUuNjAgICBDIDU2NC4wMyAzNTEuODMgNTU3LjM1IDM1NS45MCA1NTguNzggMzYyLjQ5ICAgQyA1NTkuOTggMzY4LjAyIDU2Mi40MCAzNzUuNzcgNTYxLjUyIDM4MC45OSAgIEMgNTYwLjI3IDM4OC4zMyA1NTMuNTkgMzkzLjg3IDU0Ny4xNSAzOTcuNjQgICBRIDUzNy4yOSA0MDMuNDEgNTI3LjgwIDQwOS44MCAgIEMgNTIxLjEwIDQxNC4zMiA1MTQuNDEgNDIxLjgwIDUwNi44NiA0MjguNTMgICBDIDUwNC45NCA0MzAuMjQgNTAzLjA4IDQzMi4zMSA1MDAuNjkgNDMzLjM1ICAgQyA0ODQuNTcgNDQwLjM5IDQ2OS4wMSA0NDguMjcgNDU1LjEwIDQ1OS4xMyAgIEMgNDUwLjc2IDQ2Mi41MiA0NTIuMzggNDY2Ljk3IDQ1Ny44MSA0NjcuMTIgICBDIDQ3OS41MiA0NjcuNzIgNDk1Ljc3IDQ2Ny40NCA1MTQuODMgNDYwLjk5ICAgQyA1MzMuMjEgNDU0Ljc3IDU1MC45OCA0NDcuMDUgNTcwLjY4IDQ0Ni4zMyAgIFEgNTg2Ljk0IDQ0NS43MyA2MTEuNTEgNDQ3LjEyICAgQyA2NDUuOTcgNDQ5LjA4IDY4MS4yOCA0NTguNzQgNzEzLjA0IDQ3Mi4xMyAgIFogICBNIDE5MC45OSA1NDAuMTUgICBDIDE4OC41OCA1NDQuNTkgMTkzLjY0IDU0Ni41NCAxOTcuMjUgNTQ2LjY5ICAgUSAyMDcuMDAgNTQ3LjEwIDIxNy42OCA1NDcuMzEgICBBIDEuMDQgMS4wNCAwLjAgMCAwIDIxOC42MiA1NDUuNzkgICBRIDIxNS42OCA1NDAuMTIgMjExLjgzIDUzNC40MyAgIFEgMjA5Ljc4IDUzMS40MCAyMDYuMDggNTMyLjgyICAgQyAyMDEuNjAgNTM0LjU1IDE5Mi42MCA1MzcuMTYgMTkwLjk5IDU0MC4xNSAgIFoiLz4KPHBhdGggZmlsbD0iIzAzMDMwMyIgZD0iICAgTSAxNjcuMTkgNDU0LjYwICAgUSAxNjYuMDkgNDU5Ljc3IDE1OC42NCA0NTguNzggICBRIDE1Ny42MSA0NTcuMDUgMTU2Ljg1IDQ1Ni42MiAgIFEgMTUwLjI4IDQ1Mi44MiAxNDYuMDEgNDQ2Ljk0ICAgQSAwLjgzIDAuODMgMC4wIDAgMSAxNDcuMDIgNDQ1LjY5ICAgTCAxNjcuMTkgNDU0LjYwICAgWiIvPgo8cGF0aCBmaWxsPSIjZjJlNTFkIiBkPSIgICBNIDcxMy4wNCA0NzIuMTMgICBMIDczMi41NiA0ODIuMTYgICBMIDczMS43NiA0ODYuNzMgICBBIDEuNzkgMS43OSAwLjAgMCAxIDczMC4wMiA0ODguMjAgICBMIDcxOC4xNiA0ODguMzUgICBRIDcxNy42NSA0ODguMzYgNzE3LjI2IDQ4OC42OSAgIEMgNzExLjk3IDQ5My4yMyA3MTYuMTcgNTAxLjI4IDcyMi4yMCA1MDEuNTYgICBRIDcyMC41MCA1MDMuMTAgNzIwLjAxIDUwNS40NSAgIEMgNjk2LjA2IDQ5NC40MSA2NjguNDcgNDgzLjMyIDY0MS4yNiA0NzkuMjYgICBRIDYzMy4wMSA0NzguMDMgNjE3Ljk4IDQ3OC43OSAgIFEgNjE2LjAxIDQ3OC43MSA2MTMuNjYgNDc4Ljg0ICAgQyA2MDMuOTcgNDc5LjM5IDU5MS4wNSA0NjYuNDAgNTg1Ljg4IDQ1OC41MSAgIEwgNTgwLjI3IDQ1MC40NSAgIEMgNTkxLjU0IDQ0Ni44MiA2MDQuNTQgNDQ2LjcxIDYxNi4xNiA0NDguMDUgICBDIDY0OC45NiA0NTEuODIgNjc5LjU3IDQ2MS4xNCA3MTAuOTcgNDcyLjM3ICAgUSA3MTEuNDIgNDcyLjU0IDcxMS44OSA0NzIuNDIgICBMIDcxMy4wNCA0NzIuMTMgICBaIi8+CjxwYXRoIGZpbGw9IiNlNzIyMjQiIGQ9IiAgIE0gNTgwLjI3IDQ1MC40NSAgIEwgNTg1Ljg4IDQ1OC41MSAgIEMgNTc1LjM2IDQ3My45MCA1ODYuNjEgNDg4LjczIDYwMC44MSA0OTUuMjUgICBDIDYxOS45NCA1MDQuMDIgNjQzLjA3IDUwNC40NSA2NjQuMTggNTA2Ljg1ICAgQyA2NzMuNjQgNTA3LjkzIDY4Mi43MyA1MTAuNTIgNjkyLjAxIDUxMi43MyAgIEMgNjk3Ljg0IDUxNC4xMiA3MDcuODMgNTE0LjA1IDcxNS44OCA1MTYuNjcgICBRIDcyMy4xMiA1MTkuMDEgNzMwLjg0IDUxOS40OSAgIEEgMC41NSAwLjU1IDAuMCAwIDAgNzMxLjI1IDUxOC41NSAgIEMgNzMwLjQ5IDUxNy44MyA3MjkuNjQgNTE2LjkxIDcyOC43MiA1MTYuMzUgICBDIDY5Ni4yOCA0OTYuODAgNjU4LjMyIDQ5MC41MCA2MjIuMDYgNDgxLjcyICAgUSA2MTkuMTUgNDgxLjAyIDYxNy45OCA0NzguNzkgICBRIDYzMy4wMSA0NzguMDMgNjQxLjI2IDQ3OS4yNiAgIEMgNjY4LjQ3IDQ4My4zMiA2OTYuMDYgNDk0LjQxIDcyMC4wMSA1MDUuNDUgICBMIDc2Ny42MiA1MzMuNzkgICBMIDc2NS43MSA1MzguNDYgICBDIDcyMC4xMCA1MjMuMzggNjc1LjQyIDUyMC45NiA2MjcuNDMgNTIxLjc1ICAgQyA2MTkuNjggNTIxLjg3IDYxMS4wOCA1MjEuMzAgNjAyLjcxIDUyMS4zNiAgIEwgNTc4LjU0IDQ4Ny45MiAgIEwgNTcyLjYzIDQ1Mi44OCAgIEwgNTgwLjI3IDQ1MC40NSAgIFoiLz4KPHBhdGggZmlsbD0iI2U5NjEzMSIgZD0iICAgTSA1NzIuNjMgNDUyLjg4ICAgTCA1NzguNTQgNDg3LjkyICAgUSA1NzYuOTEgNDg5LjA1IDU3NS4zMSA0OTEuODEgICBMIDU1NS4xOSA0ODMuMDUgICBDIDU2MC4zNCA0NzkuOTAgNTcyLjUxIDQ2Ny4zOSA1NjMuODYgNDYyLjA2ICAgQyA1NTcuNzMgNDU4LjI4IDU1MC42NiA0NjkuODEgNTQ2LjcyIDQ3My45OCAgIFEgNTQ1LjgwIDQ3MC40OCA1NDIuNDcgNDY3LjYwICAgUSA1NDMuNzcgNDY0LjU5IDU0My43MiA0NjAuODMgICBRIDU0My43MiA0NjAuMzQgNTQ0LjA4IDQ2MC4wMSAgIEMgNTUyLjQzIDQ1Mi4zNCA1NjEuODYgNDUxLjc5IDU3Mi42MyA0NTIuODggICBaIi8+CjxwYXRoIGZpbGw9IiM3Yzc1NzgiIGQ9IiAgIE0gMTY3LjE5IDQ1NC42MCAgIEMgMTc2LjM1IDQ1Ni45OSAyMTQuNDAgNDY0LjkxIDIyMC4zOCA0NTcuNDAgICBMIDIyMS4yMiA0NTYuNjUgICBRIDIyMS40OCA0NTYuNDIgMjIxLjc0IDQ1Ni42NCAgIEMgMjIyLjU2IDQ1Ny4zMyAyMzYuOTkgNDU4LjAxIDIzNC43NiA0NjEuNTAgICBBIDEuMzggMS4zOCAwLjAgMCAxIDIzMy4wOCA0NjIuMDQgICBRIDIzMC4xMSA0NjAuODUgMjI2Ljk0IDQ2MS4yMyAgIFEgMjI2LjQyIDQ2MS4yOSAyMjYuMjcgNDYxLjgwICAgQyAyMjQuMjEgNDY4LjgwIDIxNC44NCA0NzIuMDUgMjA3Ljk1IDQ3My4zMSAgIFEgMTg4Ljc3IDQ3Ni44MSAxNjkuMDAgNDcxLjc2ICAgQyAxNjUuNjcgNDcwLjkwIDE1NC43NiA0NjYuOTUgMTU0LjQxIDQ2My40OCAgIFEgMTU3LjkzIDQ2Mi4wNiAxNTguNjQgNDU4Ljc4ICAgUSAxNjYuMDkgNDU5Ljc3IDE2Ny4xOSA0NTQuNjAgICBaIi8+CjxwYXRoIGZpbGw9IiNlOTYxMzEiIGQ9IiAgIE0gNTg1Ljg4IDQ1OC41MSAgIEMgNTkxLjA1IDQ2Ni40MCA2MDMuOTcgNDc5LjM5IDYxMy42NiA0NzguODQgICBRIDYxNi4wMSA0NzguNzEgNjE3Ljk4IDQ3OC43OSAgIFEgNjE5LjE1IDQ4MS4wMiA2MjIuMDYgNDgxLjcyICAgQyA2NTguMzIgNDkwLjUwIDY5Ni4yOCA0OTYuODAgNzI4LjcyIDUxNi4zNSAgIEMgNzI5LjY0IDUxNi45MSA3MzAuNDkgNTE3LjgzIDczMS4yNSA1MTguNTUgICBBIDAuNTUgMC41NSAwLjAgMCAxIDczMC44NCA1MTkuNDkgICBRIDcyMy4xMiA1MTkuMDEgNzE1Ljg4IDUxNi42NyAgIEMgNzA3LjgzIDUxNC4wNSA2OTcuODQgNTE0LjEyIDY5Mi4wMSA1MTIuNzMgICBDIDY4Mi43MyA1MTAuNTIgNjczLjY0IDUwNy45MyA2NjQuMTggNTA2Ljg1ICAgQyA2NDMuMDcgNTA0LjQ1IDYxOS45NCA1MDQuMDIgNjAwLjgxIDQ5NS4yNSAgIEMgNTg2LjYxIDQ4OC43MyA1NzUuMzYgNDczLjkwIDU4NS44OCA0NTguNTEgICBaIi8+CjxwYXRoIGZpbGw9IiMwMzAzMDMiIGQ9IiAgIE0gNTU1LjE5IDQ4My4wNSAgIFEgNTQ4LjU5IDQ3OS4zMiA1NDYuNzIgNDczLjk4ICAgQyA1NTAuNjYgNDY5LjgxIDU1Ny43MyA0NTguMjggNTYzLjg2IDQ2Mi4wNiAgIEMgNTcyLjUxIDQ2Ny4zOSA1NjAuMzQgNDc5LjkwIDU1NS4xOSA0ODMuMDUgICBaIi8+CjxwYXRoIGZpbGw9IiNmN2UwYzAiIGQ9IiAgIE0gNTQyLjQ3IDQ2Ny42MCAgIFEgNTQ1LjgwIDQ3MC40OCA1NDYuNzIgNDczLjk4ICAgUSA1NDguNTkgNDc5LjMyIDU1NS4xOSA0ODMuMDUgICBMIDU3NS4zMSA0OTEuODEgICBRIDU3Mi43NCA1MDAuNTAgNTcxLjIyIDUwMy4yMSAgIEMgNTY1LjQ4IDUxMy40MCA1NTQuNjcgNTE2LjgwIDU0NC4wNSA1MTkuNDYgICBRIDUzMS41MCA1MjIuNjEgNTE4Ljc5IDUyNC45NiAgIEMgNTAwLjY0IDUyOC4zMiA0ODQuNjQgNTI4LjM1IDQ2NS42OSA1MjcuMDMgICBRIDQ2Mi4yOSA1MjYuODAgNDYwLjU0IDUyNS41OCAgIEEgMS4xMCAxLjA5IDIyLjMgMCAxIDQ2MC4wOCA1MjQuNDkgICBRIDQ2MC4zNCA1MjIuODggNDYxLjczIDUyMC4yMyAgIFEgNDc0LjAyIDQ5Ni45MSA0OTcuMzkgNDg4Ljc4ICAgQyA1MDEuNjAgNDg3LjMyIDUwNy4yMSA0ODYuNTAgNTEyLjA4IDQ4NS41OSAgIEMgNTIzLjk0IDQ4My4zNSA1MzQuNDkgNDc2LjczIDU0Mi40NyA0NjcuNjAgICBaIi8+CjxwYXRoIGZpbGw9IiMwMzAzMDMiIGQ9IiAgIE0gNzMyLjU2IDQ4Mi4xNiAgIEMgNzYwLjQ4IDQ5Ny4wMyA3NzguNjkgNTEzLjQ1IDc3Ny41NyA1NDcuNzUgICBBIDAuODMgMC44MiAyMy42IDAgMSA3NzYuMTYgNTQ4LjMwICAgQyA3NzQuMTQgNTQ2LjI4IDc2OC4xNSA1MzguODYgNzY1LjcxIDUzOC40NiAgIEwgNzY3LjYyIDUzMy43OSAgIFEgNzUzLjI5IDUwNi4xNSA3MjIuMjAgNTAxLjU2ICAgQyA3MTYuMTcgNTAxLjI4IDcxMS45NyA0OTMuMjMgNzE3LjI2IDQ4OC42OSAgIFEgNzE3LjY1IDQ4OC4zNiA3MTguMTYgNDg4LjM1ICAgTCA3MzAuMDIgNDg4LjIwICAgQSAxLjc5IDEuNzkgMC4wIDAgMCA3MzEuNzYgNDg2LjczICAgTCA3MzIuNTYgNDgyLjE2ICAgWiIvPgo8cGF0aCBmaWxsPSIjZjdlMGMwIiBkPSIgICBNIDEzNS4zMSA1MjQuMzYgICBRIDEzNi44MSA1MjEuMjkgMTM2LjQ2IDUxNy4yNSAgIEEgMS42MSAxLjU5IDU5LjggMCAxIDEzNi43MyA1MTYuMjEgICBRIDEzOS41MCA1MTIuMTYgMTQ1LjM0IDUwOS4zMyAgIFEgMTQ5LjU0IDUwNy4zMCAxNDguNjcgNTAyLjA0ICAgTCAxNDguNzggNTAxLjc0ICAgUSAxNDguOTMgNTAxLjI4IDE0OS40MSA1MDEuMzQgICBRIDE2NS4wNSA1MDMuMTEgMTgwLjAzIDQ5OC40NyAgIEEgMS4xMCAxLjA5IC0zNS4xIDAgMSAxODEuMDIgNDk4LjY0ICAgUSAxODEuMjggNDk4LjgzIDE4MS42MSA0OTguNzcgICBRIDE4Mi4xMCA0OTguNjggMTgyLjU0IDQ5OC45MiAgIFEgMTkyLjY1IDUwNC4yOCAxOTkuODMgNTEzLjIwICAgQyAyMDcuMTIgNTIyLjI1IDE5Ni44NyA1MjguOTkgMTg4LjgzIDUzMC40NCAgIEMgMTcyLjA2IDUzMy40OCAxNTEuNDggNTI4Ljk3IDEzNS4zMSA1MjQuMzYgICBaIi8+CjxwYXRoIGZpbGw9IiNmN2UwYzAiIGQ9IiAgIE0gNzIyLjIwIDUwMS41NiAgIFEgNzUzLjI5IDUwNi4xNSA3NjcuNjIgNTMzLjc5ICAgTCA3MjAuMDEgNTA1LjQ1ICAgUSA3MjAuNTAgNTAzLjEwIDcyMi4yMCA1MDEuNTYgICBaIi8+CjxwYXRoIGZpbGw9IiM3Yzc1NzgiIGQ9IiAgIE0gMTk3LjI1IDU0Ni42OSAgIEMgMTkzLjY0IDU0Ni41NCAxODguNTggNTQ0LjU5IDE5MC45OSA1NDAuMTUgICBDIDE5Mi42MCA1MzcuMTYgMjAxLjYwIDUzNC41NSAyMDYuMDggNTMyLjgyICAgUSAyMDkuNzggNTMxLjQwIDIxMS44MyA1MzQuNDMgICBRIDIxNS42OCA1NDAuMTIgMjE4LjYyIDU0NS43OSAgIEEgMS4wNCAxLjA0IDAuMCAwIDEgMjE3LjY4IDU0Ny4zMSAgIFEgMjA3LjAwIDU0Ny4xMCAxOTcuMjUgNTQ2LjY5ICAgWiIvPgo8L3N2Zz4=" alt="Twocan">
+      <h2>TWOCAN AFRICA</h2>
+      <p>Management System</p>
+      <div class="divider"></div>
+    </div>
+    <form onsubmit="doLogin(event)">
+      <div class="field">
+        <label>Email Address</label>
+        <div class="field-inner">
+          <input type="email" id="lEmail" placeholder="your@email.com" required autocomplete="email">
+        </div>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="field-inner">
+          <input type="password" id="lPass" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="eye" id="eyeBtn" onclick="toggleEye()">👁</button>
+        </div>
+      </div>
+      <button class="login-btn" id="lBtn" type="submit">LOGIN TO DASHBOARD</button>
+      <div class="login-err" id="lErr"></div>
+    </form>
+    <button class="test-link" onclick="makeTest()">Need a test account? Click here</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     APP
+════════════════════════════════ -->
+<div id="app">
+  <header class="hdr">
+    <div class="hdr-left">
+      <img id="appLogo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwLjAwIDAuMDAgODAwLjAwIDgwMC4wMCIgd2lkdGg9IjgwMCIgaGVpZ2h0PSI4MDAiPgo8ZyBzdHJva2Utd2lkdGg9IjIuMDAiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJidXR0Ij4KPHBhdGggc3Ryb2tlPSIjN2I3NDEwIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNzEzLjA0IDQ3Mi4xMyAgIEwgNzExLjg5IDQ3Mi40MiAgIFEgNzExLjQyIDQ3Mi41NCA3MTAuOTcgNDcyLjM3ICAgQyA2NzkuNTcgNDYxLjE0IDY0OC45NiA0NTEuODIgNjE2LjE2IDQ0OC4wNSAgIEMgNjA0LjU0IDQ0Ni43MSA1OTEuNTQgNDQ2LjgyIDU4MC4yNyA0NTAuNDUiLz4KPHBhdGggc3Ryb2tlPSIjNzUxMzE0IiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTgwLjI3IDQ1MC40NSAgIEwgNTcyLjYzIDQ1Mi44OCIvPgo8cGF0aCBzdHJva2U9IiM3NjMyMWEiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA1NzIuNjMgNDUyLjg4ICAgQyA1NjEuODYgNDUxLjc5IDU1Mi40MyA0NTIuMzQgNTQ0LjA4IDQ2MC4wMSAgIFEgNTQzLjcyIDQ2MC4zNCA1NDMuNzIgNDYwLjgzICAgUSA1NDMuNzcgNDY0LjU5IDU0Mi40NyA0NjcuNjAiLz4KPHBhdGggc3Ryb2tlPSIjN2Q3MjYyIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTQyLjQ3IDQ2Ny42MCAgIEMgNTM0LjQ5IDQ3Ni43MyA1MjMuOTQgNDgzLjM1IDUxMi4wOCA0ODUuNTkgICBDIDUwNy4yMSA0ODYuNTAgNTAxLjYwIDQ4Ny4zMiA0OTcuMzkgNDg4Ljc4ICAgUSA0NzQuMDIgNDk2LjkxIDQ2MS43MyA1MjAuMjMgICBRIDQ2MC4zNCA1MjIuODggNDYwLjA4IDUyNC40OSAgIEEgMS4xMCAxLjA5IDIyLjMgMCAwIDQ2MC41NCA1MjUuNTggICBRIDQ2Mi4yOSA1MjYuODAgNDY1LjY5IDUyNy4wMyAgIEMgNDg0LjY0IDUyOC4zNSA1MDAuNjQgNTI4LjMyIDUxOC43OSA1MjQuOTYgICBRIDUzMS41MCA1MjIuNjEgNTQ0LjA1IDUxOS40NiAgIEMgNTU0LjY3IDUxNi44MCA1NjUuNDggNTEzLjQwIDU3MS4yMiA1MDMuMjEgICBRIDU3Mi43NCA1MDAuNTAgNTc1LjMxIDQ5MS44MSIvPgo8cGF0aCBzdHJva2U9IiM3NjMyMWEiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA1NzUuMzEgNDkxLjgxICAgUSA1NzYuOTEgNDg5LjA1IDU3OC41NCA0ODcuOTIiLz4KPHBhdGggc3Ryb2tlPSIjNzUxMzE0IiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTc4LjU0IDQ4Ny45MiAgIEwgNjAyLjcxIDUyMS4zNiIvPgo8cGF0aCBzdHJva2U9IiM3ZDcyNjIiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSAxMzUuMzEgNTI0LjM2ICAgQyAxNTEuNDggNTI4Ljk3IDE3Mi4wNiA1MzMuNDggMTg4LjgzIDUzMC40NCAgIEMgMTk2Ljg3IDUyOC45OSAyMDcuMTIgNTIyLjI1IDE5OS44MyA1MTMuMjAgICBRIDE5Mi42NSA1MDQuMjggMTgyLjU0IDQ5OC45MiAgIFEgMTgyLjEwIDQ5OC42OCAxODEuNjEgNDk4Ljc3ICAgUSAxODEuMjggNDk4LjgzIDE4MS4wMiA0OTguNjQgICBBIDEuMTAgMS4wOSAtMzUuMSAwIDAgMTgwLjAzIDQ5OC40NyAgIFEgMTY1LjA1IDUwMy4xMSAxNDkuNDEgNTAxLjM0ICAgUSAxNDguOTMgNTAxLjI4IDE0OC43OCA1MDEuNzQgICBMIDE0OC42NyA1MDIuMDQiLz4KPHBhdGggc3Ryb2tlPSIjNDAzYzNlIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gMTU0LjQxIDQ2My40OCAgIEMgMTU0Ljc2IDQ2Ni45NSAxNjUuNjcgNDcwLjkwIDE2OS4wMCA0NzEuNzYgICBRIDE4OC43NyA0NzYuODEgMjA3Ljk1IDQ3My4zMSAgIEMgMjE0Ljg0IDQ3Mi4wNSAyMjQuMjEgNDY4LjgwIDIyNi4yNyA0NjEuODAgICBRIDIyNi40MiA0NjEuMjkgMjI2Ljk0IDQ2MS4yMyAgIFEgMjMwLjExIDQ2MC44NSAyMzMuMDggNDYyLjA0ICAgQSAxLjM4IDEuMzggMC4wIDAgMCAyMzQuNzYgNDYxLjUwICAgQyAyMzYuOTkgNDU4LjAxIDIyMi41NiA0NTcuMzMgMjIxLjc0IDQ1Ni42NCAgIFEgMjIxLjQ4IDQ1Ni40MiAyMjEuMjIgNDU2LjY1ICAgTCAyMjAuMzggNDU3LjQwIi8+CjxwYXRoIHN0cm9rZT0iI2U4NDIyYiIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDU4NS44OCA0NTguNTEgICBDIDU3NS4zNiA0NzMuOTAgNTg2LjYxIDQ4OC43MyA2MDAuODEgNDk1LjI1ICAgQyA2MTkuOTQgNTA0LjAyIDY0My4wNyA1MDQuNDUgNjY0LjE4IDUwNi44NSAgIEMgNjczLjY0IDUwNy45MyA2ODIuNzMgNTEwLjUyIDY5Mi4wMSA1MTIuNzMgICBDIDY5Ny44NCA1MTQuMTIgNzA3LjgzIDUxNC4wNSA3MTUuODggNTE2LjY3ICAgUSA3MjMuMTIgNTE5LjAxIDczMC44NCA1MTkuNDkgICBBIDAuNTUgMC41NSAwLjAgMCAwIDczMS4yNSA1MTguNTUgICBDIDczMC40OSA1MTcuODMgNzI5LjY0IDUxNi45MSA3MjguNzIgNTE2LjM1ICAgQyA2OTYuMjggNDk2LjgwIDY1OC4zMiA0OTAuNTAgNjIyLjA2IDQ4MS43MiAgIFEgNjE5LjE1IDQ4MS4wMiA2MTcuOTggNDc4Ljc5Ii8+CjxwYXRoIHN0cm9rZT0iI2VmODE3MiIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDcyMC4wMSA1MDUuNDUgICBMIDc2Ny42MiA1MzMuNzkiLz4KPHBhdGggc3Ryb2tlPSIjNzUxMzE0IiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNzY3LjYyIDUzMy43OSAgIEwgNzY1LjcxIDUzOC40NiIvPgo8cGF0aCBzdHJva2U9IiNlODQyMmIiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA1NzguNTQgNDg3LjkyICAgTCA1NzIuNjMgNDUyLjg4Ii8+CjxwYXRoIHN0cm9rZT0iI2YwYTE3OSIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDU3NS4zMSA0OTEuODEgICBMIDU1NS4xOSA0ODMuMDUiLz4KPHBhdGggc3Ryb2tlPSIjNzYzMjFhIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTU1LjE5IDQ4My4wNSAgIEMgNTYwLjM0IDQ3OS45MCA1NzIuNTEgNDY3LjM5IDU2My44NiA0NjIuMDYgICBDIDU1Ny43MyA0NTguMjggNTUwLjY2IDQ2OS44MSA1NDYuNzIgNDczLjk4Ii8+CjxwYXRoIHN0cm9rZT0iI2YwYTE3OSIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDU0Ni43MiA0NzMuOTggICBRIDU0NS44MCA0NzAuNDggNTQyLjQ3IDQ2Ny42MCIvPgo8cGF0aCBzdHJva2U9IiM3Yjc0MTAiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA3MzIuNTYgNDgyLjE2ICAgTCA3MzEuNzYgNDg2LjczICAgQSAxLjc5IDEuNzkgMC4wIDAgMSA3MzAuMDIgNDg4LjIwICAgTCA3MTguMTYgNDg4LjM1ICAgUSA3MTcuNjUgNDg4LjM2IDcxNy4yNiA0ODguNjkgICBDIDcxMS45NyA0OTMuMjMgNzE2LjE3IDUwMS4yOCA3MjIuMjAgNTAxLjU2Ii8+CjxwYXRoIHN0cm9rZT0iI2Y1ZTM2ZiIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDcyMi4yMCA1MDEuNTYgICBRIDcyMC41MCA1MDMuMTAgNzIwLjAxIDUwNS40NSIvPgo8cGF0aCBzdHJva2U9IiNlZDg0MjEiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA3MjAuMDEgNTA1LjQ1ICAgQyA2OTYuMDYgNDk0LjQxIDY2OC40NyA0ODMuMzIgNjQxLjI2IDQ3OS4yNiAgIFEgNjMzLjAxIDQ3OC4wMyA2MTcuOTggNDc4Ljc5Ii8+CjxwYXRoIHN0cm9rZT0iI2VlYTMyNyIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDYxNy45OCA0NzguNzkgICBRIDYxNi4wMSA0NzguNzEgNjEzLjY2IDQ3OC44NCAgIEMgNjAzLjk3IDQ3OS4zOSA1OTEuMDUgNDY2LjQwIDU4NS44OCA0NTguNTEiLz4KPHBhdGggc3Ryb2tlPSIjZWQ4NDIxIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gNTg1Ljg4IDQ1OC41MSAgIEwgNTgwLjI3IDQ1MC40NSIvPgo8cGF0aCBzdHJva2U9IiM3ZDcyNjIiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSA1NTUuMTkgNDgzLjA1ICAgUSA1NDguNTkgNDc5LjMyIDU0Ni43MiA0NzMuOTgiLz4KPHBhdGggc3Ryb2tlPSIjNDAzYzNlIiB2ZWN0b3ItZWZmZWN0PSJub24tc2NhbGluZy1zdHJva2UiIGQ9IiAgIE0gMTY3LjE5IDQ1NC42MCAgIFEgMTY2LjA5IDQ1OS43NyAxNTguNjQgNDU4Ljc4Ii8+CjxwYXRoIHN0cm9rZT0iIzdkNzI2MiIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiBkPSIgICBNIDc2Ny42MiA1MzMuNzkgICBRIDc1My4yOSA1MDYuMTUgNzIyLjIwIDUwMS41NiIvPgo8cGF0aCBzdHJva2U9IiM0MDNjM2UiIHZlY3Rvci1lZmZlY3Q9Im5vbi1zY2FsaW5nLXN0cm9rZSIgZD0iICAgTSAxOTAuOTkgNTQwLjE1ICAgQyAxODguNTggNTQ0LjU5IDE5My42NCA1NDYuNTQgMTk3LjI1IDU0Ni42OSAgIFEgMjA3LjAwIDU0Ny4xMCAyMTcuNjggNTQ3LjMxICAgQSAxLjA0IDEuMDQgMC4wIDAgMCAyMTguNjIgNTQ1Ljc5ICAgUSAyMTUuNjggNTQwLjEyIDIxMS44MyA1MzQuNDMgICBRIDIwOS43OCA1MzEuNDAgMjA2LjA4IDUzMi44MiAgIEMgMjAxLjYwIDUzNC41NSAxOTIuNjAgNTM3LjE2IDE5MC45OSA1NDAuMTUiLz4KPC9nPgo8cGF0aCBmaWxsPSIjMDMwMzAzIiBkPSIgICBNIDcxMy4wNCA0NzIuMTMgICBMIDcxMS44OSA0NzIuNDIgICBRIDcxMS40MiA0NzIuNTQgNzEwLjk3IDQ3Mi4zNyAgIEMgNjc5LjU3IDQ2MS4xNCA2NDguOTYgNDUxLjgyIDYxNi4xNiA0NDguMDUgICBDIDYwNC41NCA0NDYuNzEgNTkxLjU0IDQ0Ni44MiA1ODAuMjcgNDUwLjQ1ICAgTCA1NzIuNjMgNDUyLjg4ICAgQyA1NjEuODYgNDUxLjc5IDU1Mi40MyA0NTIuMzQgNTQ0LjA4IDQ2MC4wMSAgIFEgNTQzLjcyIDQ2MC4zNCA1NDMuNzIgNDYwLjgzICAgUSA1NDMuNzcgNDY0LjU5IDU0Mi40NyA0NjcuNjAgICBDIDUzNC40OSA0NzYuNzMgNTIzLjk0IDQ4My4zNSA1MTIuMDggNDg1LjU5ICAgQyA1MDcuMjEgNDg2LjUwIDUwMS42MCA0ODcuMzIgNDk3LjM5IDQ4OC43OCAgIFEgNDc0LjAyIDQ5Ni45MSA0NjEuNzMgNTIwLjIzICAgUSA0NjAuMzQgNTIyLjg4IDQ2MC4wOCA1MjQuNDkgICBBIDEuMTAgMS4wOSAyMi4zIDAgMCA0NjAuNTQgNTI1LjU4ICAgUSA0NjIuMjkgNTI2LjgwIDQ2NS42OSA1MjcuMDMgICBDIDQ4NC42NCA1MjguMzUgNTAwLjY0IDUyOC4zMiA1MTguNzkgNTI0Ljk2ICAgUSA1MzEuNTAgNTIyLjYxIDU0NC4wNSA1MTkuNDYgICBDIDU1NC42NyA1MTYuODAgNTY1LjQ4IDUxMy40MCA1NzEuMjIgNTAzLjIxICAgUSA1NzIuNzQgNTAwLjUwIDU3NS4zMSA0OTEuODEgICBRIDU3Ni45MSA0ODkuMDUgNTc4LjU0IDQ4Ny45MiAgIEwgNjAyLjcxIDUyMS4zNiAgIFEgNjAwLjkyIDUyMS4wMiA1OTguNDEgNTIwLjk4ICAgQyA1OTEuNzUgNTIwLjg2IDU4NC43OCA1MTkuNDggNTc4LjEzIDUxOC43MiAgIEMgNTcyLjg2IDUxOC4xMiA1NjQuMDAgNTE3LjMwIDU1OC45NyA1MTkuMTUgICBDIDUzNS4wOSA1MjcuOTQgNTEyLjQ2IDUzMy42NSA0ODcuMDEgNTMxLjEyICAgQyA0NTYuMzYgNTI4LjA4IDQyMi44MCA1MjcuMDIgMzk0LjA3IDUzOS4zNCAgIEMgMzc0LjU3IDU0Ny42OSAzNTQuMjEgNTYxLjA2IDMzMi40MyA1NjIuNjcgICBDIDMxMy42NiA1NjQuMDYgMjkzLjQ1IDU2MC45NSAyNzQuMzQgNTU5LjA1ICAgQyAyNjIuOTYgNTU3LjkxIDI1MC45OCA1NTguMzcgMjM5LjI0IDU1Ny45NiAgIEMgMjI3LjI2IDU1Ny41NCAyMTAuNjggNTU4LjIwIDE5OC4wMCA1NTYuMTEgICBDIDE5My4yOSA1NTUuMzMgMTg5LjU0IDU0OS45MCAxODYuMTIgNTQ2LjgwICAgUSAxODUuNzUgNTQ2LjQ2IDE4NS4yNCA1NDYuNDggICBDIDE4MS4wMCA1NDYuNTkgMTc2LjM5IDU0Ny4wMSAxNzIuNTYgNTQ1LjAxICAgQyAxNjguMjkgNTQyLjc3IDE2Mi4yOSA1MzUuODAgMTU3LjgxIDUzNi41MiAgIEMgMTMyLjA0IDU0MC42OCAxMDQuODggNTQ2Ljk2IDc5LjQ5IDU0NS40NiAgIFEgNzMuNDQgNTQ1LjEwIDY2LjIxIDU0Mi4xMyAgIFEgNjMuOTEgNTQxLjE4IDYxLjY1IDU0MS4xOSAgIFEgMzkuMjYgNTQxLjMzIDE2LjkwIDU0MS4yNyAgIEMgMTQuMDggNTQxLjI2IDExLjkwIDU0MC42MSAxMi4yOSA1MzcuMzIgICBDIDEyLjY3IDUzNC4xMSAzMS43MyA1MzIuNzUgMzQuNzcgNTMyLjUyICAgUSA0OS45OSA1MzEuMzkgNjQuNDAgNTI2LjY2ICAgUSA3NC44OCA1MjMuMjIgNzcuODggNTIyLjY0ICAgQyA5NS44MiA1MTkuMTYgMTE0LjA4IDUyMi4zMSAxMzEuODkgNTI0LjY5ICAgQyAxMzMuMjcgNTI0Ljg3IDEzNC4xMyA1MjQuMTYgMTM1LjMxIDUyNC4zNiAgIEMgMTUxLjQ4IDUyOC45NyAxNzIuMDYgNTMzLjQ4IDE4OC44MyA1MzAuNDQgICBDIDE5Ni44NyA1MjguOTkgMjA3LjEyIDUyMi4yNSAxOTkuODMgNTEzLjIwICAgUSAxOTIuNjUgNTA0LjI4IDE4Mi41NCA0OTguOTIgICBRIDE4Mi4xMCA0OTguNjggMTgxLjYxIDQ5OC43NyAgIFEgMTgxLjI4IDQ5OC44MyAxODEuMDIgNDk4LjY0ICAgQSAxLjEwIDEuMDkgLTM1LjEgMCAwIDE4MC4wMyA0OTguNDcgICBRIDE2NS4wNSA1MDMuMTEgMTQ5LjQxIDUwMS4zNCAgIFEgMTQ4LjkzIDUwMS4yOCAxNDguNzggNTAxLjc0ICAgTCAxNDguNjcgNTAyLjA0ICAgTCAxNDguMTUgNTAwLjcwICAgQSAxLjQzIDEuMzkgLTg4LjEgMCAwIDE0Ny40NyA0OTkuOTUgICBRIDE0NS4zNCA0OTguOTEgMTQ0LjY3IDQ5Ni43MSAgIFEgMTQ0LjUwIDQ5Ni4xNyAxNDQuODcgNDk1Ljc1ICAgUSAxNTEuMTIgNDg4LjUwIDE1Ny41MSA0ODEuNTMgICBDIDE2MS4xMSA0NzcuNjEgMTU0LjAxIDQ2OC41MCAxNTEuMTEgNDY2LjQwICAgQyAxNDguMjAgNDY0LjMwIDE0My40OSA0NjMuMTcgMTM5Ljc2IDQ2MS41NyAgIEEgMS40OSAxLjQ5IDAuMCAwIDEgMTM5LjkxIDQ1OC43NyAgIEMgMTQ0LjExIDQ1Ny41MCAxNDkuNTQgNDYwLjcxIDE1Mi43NSA0NjMuMjEgICBRIDE1My4xMyA0NjMuNTEgMTUzLjYxIDQ2My41MCAgIEwgMTU0LjQxIDQ2My40OCAgIEMgMTU0Ljc2IDQ2Ni45NSAxNjUuNjcgNDcwLjkwIDE2OS4wMCA0NzEuNzYgICBRIDE4OC43NyA0NzYuODEgMjA3Ljk1IDQ3My4zMSAgIEMgMjE0Ljg0IDQ3Mi4wNSAyMjQuMjEgNDY4LjgwIDIyNi4yNyA0NjEuODAgICBRIDIyNi40MiA0NjEuMjkgMjI2Ljk0IDQ2MS4yMyAgIFEgMjMwLjExIDQ2MC44NSAyMzMuMDggNDYyLjA0ICAgQSAxLjM4IDEuMzggMC4wIDAgMCAyMzQuNzYgNDYxLjUwICAgQyAyMzYuOTkgNDU4LjAxIDIyMi41NiA0NTcuMzMgMjIxLjc0IDQ1Ni42NCAgIFEgMjIxLjQ4IDQ1Ni40MiAyMjEuMjIgNDU2LjY1ICAgTCAyMjAuMzggNDU3LjQwICAgQyAyMjAuMTMgNDU2LjI1IDIxOS42NCA0NTUuMzkgMjE4LjQ2IDQ1NC45MyAgIEMgMTk5LjgyIDQ0Ny43MyAxODAuMjMgNDQwLjQwIDE2OC4yNCA0MjYuMDIgICBRIDE2Ni45MiA0MjQuNDQgMTY2LjI0IDQyMi42MCAgIEEgMC43OSAwLjc4IDEuMCAwIDEgMTY3LjI4IDQyMS42MCAgIFEgMTY5LjQwIDQyMi40OCAxNzEuMzYgNDIzLjg2ICAgQyAxOTUuODUgNDQxLjAyIDIyMS45NyA0NTAuNDIgMjUxLjA4IDQ1NS4wOCAgIEMgMjUyLjg2IDQ1NS4zNyAyNTQuMzggNDU1LjE5IDI1NS41NyA0NTMuOTQgICBBIDIuMDAgMS45OSAzNS40IDAgMCAyNTUuMDMgNDUwLjc4ICAgQyAyMzIuMTEgNDM5LjE4IDIwNC42NCA0MjYuODUgMTk2Ljk3IDM5OS43NiAgIEMgMTk1Ljk0IDM5Ni4xMyAyMDEuMDMgMzk1Ljk2IDIwMi45OCAzOTguMDIgICBDIDIyMy41NCA0MTkuODEgMjQzLjMyIDQzOC4zOCAyNzMuNzggNDQ2LjM4ICAgUSAyNzYuMzQgNDQ3LjA1IDI3Ny4yNyA0NDUuMTggICBBIDIuMjcgMi4yNiAzMS43IDAgMCAyNzYuNjAgNDQyLjM3ICAgUSAyNzAuODMgNDM4LjAzIDI2NS40MCA0MzMuODYgICBDIDI0NC45NCA0MTguMTQgMjM1LjM3IDM5Ny4wOSAyMzIuNjQgMzcxLjY3ICAgQSAwLjk2IDAuOTYgMC4wIDAgMSAyMzQuMTMgMzcwLjc3ICAgQyAyMzUuMDMgMzcxLjM4IDIzNi41MCAzNzIuNjMgMjM3LjEwIDM3My42MiAgIFEgMjQzLjU2IDM4NC4yOCAyNTcuNjggNDA2LjA2ICAgUSAyNzEuMjcgNDI3LjAyIDI4OS44MiA0NDEuMDcgICBDIDI5MS4xMyA0NDIuMDcgMjkyLjg3IDQ0Mi4wNCAyOTMuOTQgNDQwLjg4ICAgUSAyOTQuMzEgNDQwLjQ3IDI5NC4xNyA0MzkuOTQgICBDIDI5My43NiA0MzguMzYgMjkzLjMyIDQzNi42MCAyOTIuMzAgNDM1LjI3ICAgUSAyNzUuMjcgNDEzLjA2IDI2NS4wNCAzODYuOTUgICBRIDI2NC41OSAzODUuODAgMjY0LjUzIDM4NS4wMiAgIEEgMC44MSAwLjgxIDAuMCAwIDEgMjY1Ljk5IDM4NC40OCAgIEMgMjc4LjIwIDQwMS4yNCAyOTAuMzUgNDIwLjA3IDMwNC41MyA0MzMuNDkgICBDIDMwOS4wMSA0MzcuNzMgMzExLjM0IDQzMy42NCAzMTQuMDIgNDI5Ljc5ICAgUSAzMTkuNDIgNDIyLjA0IDMzMC4wMCA0MjMuNDAgICBDIDMzNi40NyA0MjQuMjQgMzM3LjMwIDQxMy4zMiAzNDUuMzkgNDEzLjUyICAgQyAzNTQuNzAgNDEzLjc2IDM1NS4wNyA0MTAuOTMgMzYwLjA0IDQwNC4yOSAgIEMgMzYxLjI1IDQwMi42NyAzNjIuNzEgNDAyLjQwIDM2NC44MyA0MDIuNTIgICBRIDM3MS4wMyA0MDIuODYgMzc3LjAyIDQwMS4wOSAgIEMgMzg4LjAyIDM5Ny44MyAzOTAuNDIgMzg5LjIyIDM5Mi4xNyAzNzguODggICBBIDMuMTAgMy4wOCAtNy4xIDAgMSAzOTMuOTggMzc2LjU3ICAgTCA0MDQuMjkgMzcyLjAzICAgQSAxLjI3IDEuMjUgODcuMCAwIDAgNDA0Ljk5IDM3MS4yNCAgIEMgNDA2LjkwIDM2NC43NCA0MDMuNTEgMzU5LjMyIDQxMC42NiAzNTQuNDcgICBBIDEuNjcgMS42MyAyNi43IDAgMSA0MTEuNTUgMzU0LjE5ICAgQyA0MTkuMTQgMzU0LjA4IDQyNS42MiAzNTcuODYgNDMxLjczIDM2MS44MSAgIEMgNDMzLjQ0IDM2Mi45MiA0MzUuMDQgMzYzLjE3IDQzNi42MSAzNjEuODggICBBIDIuNjMgMi42MyAwLjAgMCAwIDQzNy40NiAzNTkuMDcgICBRIDQzNC44MCAzNTAuMzYgNDMyLjAyIDM0MS4zNSAgIEMgNDMwLjc1IDMzNy4yNSA0MzEuNDMgMzM0LjIxIDQzNi40NyAzMzUuMjQgICBDIDQ0Ni4wNCAzMzcuMjAgNDUwLjU3IDM0NC4xMyA0NTYuNDggMzUxLjAzICAgQyA0NTguODIgMzUzLjc3IDQ2NC43OCAzNTguOTggNDY4LjY2IDM1OC4zNSAgIEMgNDcxLjQ4IDM1Ny44OSA0NzEuODYgMzU1LjA2IDQ3MS4xOCAzNTIuNjAgICBRIDQ2OS4wNCAzNDQuOTIgNDY3LjU0IDMzNy4xMiAgIEMgNDY1Ljg5IDMyOC41MSA0NjYuNTEgMzE5LjIzIDQ2Ni41MiAzMTAuMzIgICBRIDQ2Ni41MiAzMDkuNTkgNDY3LjI4IDMwNy45NSAgIEMgNDY5LjkzIDMwMi4yMSA0NzQuNTkgMzA0Ljg2IDQ3Ny4wMiAzMDguOTIgICBDIDQ4NC4yNyAzMjEuMDAgNDg2LjY1IDMzMS42NiA0ODkuNTAgMzQ1Ljc0ICAgUSA0ODkuOTcgMzQ4LjA1IDQ5Mi4wNiAzNDkuNDAgICBBIDEuMTMgMS4xMyAwLjAgMCAwIDQ5Mi45MiAzNDkuNTQgICBDIDUwMC40OCAzNDcuNzMgNDk5LjA2IDMzOC4xMCA0OTguNjAgMzMxLjc1ICAgQyA0OTcuMDUgMzEwLjM2IDUwMS43MiAyODkuMTkgNTEyLjE2IDI3MC4xNyAgIFEgNTE0LjEzIDI2Ni41OCA1MTYuMjcgMjY0LjI5ICAgQSAxLjExIDEuMDkgLTY0LjggMCAxIDUxNy4xNiAyNjMuOTYgICBDIDUyMS43NCAyNjQuNDcgNTI0LjQwIDI3Ni4xOSA1MjkuNzMgMjcwLjEzICAgUSA1MzAuMDggMjY5LjczIDUzMC4wNSAyNjkuMjAgICBDIDUyOS40OSAyNTcuMzMgNTMwLjg5IDI0Ni40MyA1MzguNzggMjM3LjA0ICAgQSAxLjMzIDEuMzMgMC4wIDAgMSA1NDEuMDYgMjM3LjQ3ICAgQyA1NDYuMDUgMjUyLjA4IDU1My4zNCAyNjYuMjYgNTU2LjU3IDI4MS4zOSAgIEMgNTU5Ljc3IDI5Ni4zNSA1NTkuMDQgMzE0LjM5IDU1OC42NCAzMzAuMjIgICBBIDEuNzAgMS42NiAtNjEuNiAwIDAgNTU4LjkxIDMzMS4xNyAgIEMgNTYyLjMyIDMzNi4zNyA1NjUuNjcgMzM4LjkxIDU2NC44MiAzNDUuNjAgICBDIDU2NC4wMyAzNTEuODMgNTU3LjM1IDM1NS45MCA1NTguNzggMzYyLjQ5ICAgQyA1NTkuOTggMzY4LjAyIDU2Mi40MCAzNzUuNzcgNTYxLjUyIDM4MC45OSAgIEMgNTYwLjI3IDM4OC4zMyA1NTMuNTkgMzkzLjg3IDU0Ny4xNSAzOTcuNjQgICBRIDUzNy4yOSA0MDMuNDEgNTI3LjgwIDQwOS44MCAgIEMgNTIxLjEwIDQxNC4zMiA1MTQuNDEgNDIxLjgwIDUwNi44NiA0MjguNTMgICBDIDUwNC45NCA0MzAuMjQgNTAzLjA4IDQzMi4zMSA1MDAuNjkgNDMzLjM1ICAgQyA0ODQuNTcgNDQwLjM5IDQ2OS4wMSA0NDguMjcgNDU1LjEwIDQ1OS4xMyAgIEMgNDUwLjc2IDQ2Mi41MiA0NTIuMzggNDY2Ljk3IDQ1Ny44MSA0NjcuMTIgICBDIDQ3OS41MiA0NjcuNzIgNDk1Ljc3IDQ2Ny40NCA1MTQuODMgNDYwLjk5ICAgQyA1MzMuMjEgNDU0Ljc3IDU1MC45OCA0NDcuMDUgNTcwLjY4IDQ0Ni4zMyAgIFEgNTg2Ljk0IDQ0NS43MyA2MTEuNTEgNDQ3LjEyICAgQyA2NDUuOTcgNDQ5LjA4IDY4MS4yOCA0NTguNzQgNzEzLjA0IDQ3Mi4xMyAgIFogICBNIDE5MC45OSA1NDAuMTUgICBDIDE4OC41OCA1NDQuNTkgMTkzLjY0IDU0Ni41NCAxOTcuMjUgNTQ2LjY5ICAgUSAyMDcuMDAgNTQ3LjEwIDIxNy42OCA1NDcuMzEgICBBIDEuMDQgMS4wNCAwLjAgMCAwIDIxOC42MiA1NDUuNzkgICBRIDIxNS42OCA1NDAuMTIgMjExLjgzIDUzNC40MyAgIFEgMjA5Ljc4IDUzMS40MCAyMDYuMDggNTMyLjgyICAgQyAyMDEuNjAgNTM0LjU1IDE5Mi42MCA1MzcuMTYgMTkwLjk5IDU0MC4xNSAgIFoiLz4KPHBhdGggZmlsbD0iIzAzMDMwMyIgZD0iICAgTSAxNjcuMTkgNDU0LjYwICAgUSAxNjYuMDkgNDU5Ljc3IDE1OC42NCA0NTguNzggICBRIDE1Ny42MSA0NTcuMDUgMTU2Ljg1IDQ1Ni42MiAgIFEgMTUwLjI4IDQ1Mi44MiAxNDYuMDEgNDQ2Ljk0ICAgQSAwLjgzIDAuODMgMC4wIDAgMSAxNDcuMDIgNDQ1LjY5ICAgTCAxNjcuMTkgNDU0LjYwICAgWiIvPgo8cGF0aCBmaWxsPSIjZjJlNTFkIiBkPSIgICBNIDcxMy4wNCA0NzIuMTMgICBMIDczMi41NiA0ODIuMTYgICBMIDczMS43NiA0ODYuNzMgICBBIDEuNzkgMS43OSAwLjAgMCAxIDczMC4wMiA0ODguMjAgICBMIDcxOC4xNiA0ODguMzUgICBRIDcxNy42NSA0ODguMzYgNzE3LjI2IDQ4OC42OSAgIEMgNzExLjk3IDQ5My4yMyA3MTYuMTcgNTAxLjI4IDcyMi4yMCA1MDEuNTYgICBRIDcyMC41MCA1MDMuMTAgNzIwLjAxIDUwNS40NSAgIEMgNjk2LjA2IDQ5NC40MSA2NjguNDcgNDgzLjMyIDY0MS4yNiA0NzkuMjYgICBRIDYzMy4wMSA0NzguMDMgNjE3Ljk4IDQ3OC43OSAgIFEgNjE2LjAxIDQ3OC43MSA2MTMuNjYgNDc4Ljg0ICAgQyA2MDMuOTcgNDc5LjM5IDU5MS4wNSA0NjYuNDAgNTg1Ljg4IDQ1OC41MSAgIEwgNTgwLjI3IDQ1MC40NSAgIEMgNTkxLjU0IDQ0Ni44MiA2MDQuNTQgNDQ2LjcxIDYxNi4xNiA0NDguMDUgICBDIDY0OC45NiA0NTEuODIgNjc5LjU3IDQ2MS4xNCA3MTAuOTcgNDcyLjM3ICAgUSA3MTEuNDIgNDcyLjU0IDcxMS44OSA0NzIuNDIgICBMIDcxMy4wNCA0NzIuMTMgICBaIi8+CjxwYXRoIGZpbGw9IiNlNzIyMjQiIGQ9IiAgIE0gNTgwLjI3IDQ1MC40NSAgIEwgNTg1Ljg4IDQ1OC41MSAgIEMgNTc1LjM2IDQ3My45MCA1ODYuNjEgNDg4LjczIDYwMC44MSA0OTUuMjUgICBDIDYxOS45NCA1MDQuMDIgNjQzLjA3IDUwNC40NSA2NjQuMTggNTA2Ljg1ICAgQyA2NzMuNjQgNTA3LjkzIDY4Mi43MyA1MTAuNTIgNjkyLjAxIDUxMi43MyAgIEMgNjk3Ljg0IDUxNC4xMiA3MDcuODMgNTE0LjA1IDcxNS44OCA1MTYuNjcgICBRIDcyMy4xMiA1MTkuMDEgNzMwLjg0IDUxOS40OSAgIEEgMC41NSAwLjU1IDAuMCAwIDAgNzMxLjI1IDUxOC41NSAgIEMgNzMwLjQ5IDUxNy44MyA3MjkuNjQgNTE2LjkxIDcyOC43MiA1MTYuMzUgICBDIDY5Ni4yOCA0OTYuODAgNjU4LjMyIDQ5MC41MCA2MjIuMDYgNDgxLjcyICAgUSA2MTkuMTUgNDgxLjAyIDYxNy45OCA0NzguNzkgICBRIDYzMy4wMSA0NzguMDMgNjQxLjI2IDQ3OS4yNiAgIEMgNjY4LjQ3IDQ4My4zMiA2OTYuMDYgNDk0LjQxIDcyMC4wMSA1MDUuNDUgICBMIDc2Ny42MiA1MzMuNzkgICBMIDc2NS43MSA1MzguNDYgICBDIDcyMC4xMCA1MjMuMzggNjc1LjQyIDUyMC45NiA2MjcuNDMgNTIxLjc1ICAgQyA2MTkuNjggNTIxLjg3IDYxMS4wOCA1MjEuMzAgNjAyLjcxIDUyMS4zNiAgIEwgNTc4LjU0IDQ4Ny45MiAgIEwgNTcyLjYzIDQ1Mi44OCAgIEwgNTgwLjI3IDQ1MC40NSAgIFoiLz4KPHBhdGggZmlsbD0iI2U5NjEzMSIgZD0iICAgTSA1NzIuNjMgNDUyLjg4ICAgTCA1NzguNTQgNDg3LjkyICAgUSA1NzYuOTEgNDg5LjA1IDU3NS4zMSA0OTEuODEgICBMIDU1NS4xOSA0ODMuMDUgICBDIDU2MC4zNCA0NzkuOTAgNTcyLjUxIDQ2Ny4zOSA1NjMuODYgNDYyLjA2ICAgQyA1NTcuNzMgNDU4LjI4IDU1MC42NiA0NjkuODEgNTQ2LjcyIDQ3My45OCAgIFEgNTQ1LjgwIDQ3MC40OCA1NDIuNDcgNDY3LjYwICAgUSA1NDMuNzcgNDY0LjU5IDU0My43MiA0NjAuODMgICBRIDU0My43MiA0NjAuMzQgNTQ0LjA4IDQ2MC4wMSAgIEMgNTUyLjQzIDQ1Mi4zNCA1NjEuODYgNDUxLjc5IDU3Mi42MyA0NTIuODggICBaIi8+CjxwYXRoIGZpbGw9IiM3Yzc1NzgiIGQ9IiAgIE0gMTY3LjE5IDQ1NC42MCAgIEMgMTc2LjM1IDQ1Ni45OSAyMTQuNDAgNDY0LjkxIDIyMC4zOCA0NTcuNDAgICBMIDIyMS4yMiA0NTYuNjUgICBRIDIyMS40OCA0NTYuNDIgMjIxLjc0IDQ1Ni42NCAgIEMgMjIyLjU2IDQ1Ny4zMyAyMzYuOTkgNDU4LjAxIDIzNC43NiA0NjEuNTAgICBBIDEuMzggMS4zOCAwLjAgMCAxIDIzMy4wOCA0NjIuMDQgICBRIDIzMC4xMSA0NjAuODUgMjI2Ljk0IDQ2MS4yMyAgIFEgMjI2LjQyIDQ2MS4yOSAyMjYuMjcgNDYxLjgwICAgQyAyMjQuMjEgNDY4LjgwIDIxNC44NCA0NzIuMDUgMjA3Ljk1IDQ3My4zMSAgIFEgMTg4Ljc3IDQ3Ni44MSAxNjkuMDAgNDcxLjc2ICAgQyAxNjUuNjcgNDcwLjkwIDE1NC43NiA0NjYuOTUgMTU0LjQxIDQ2My40OCAgIFEgMTU3LjkzIDQ2Mi4wNiAxNTguNjQgNDU4Ljc4ICAgUSAxNjYuMDkgNDU5Ljc3IDE2Ny4xOSA0NTQuNjAgICBaIi8+CjxwYXRoIGZpbGw9IiNlOTYxMzEiIGQ9IiAgIE0gNTg1Ljg4IDQ1OC41MSAgIEMgNTkxLjA1IDQ2Ni40MCA2MDMuOTcgNDc5LjM5IDYxMy42NiA0NzguODQgICBRIDYxNi4wMSA0NzguNzEgNjE3Ljk4IDQ3OC43OSAgIFEgNjE5LjE1IDQ4MS4wMiA2MjIuMDYgNDgxLjcyICAgQyA2NTguMzIgNDkwLjUwIDY5Ni4yOCA0OTYuODAgNzI4LjcyIDUxNi4zNSAgIEMgNzI5LjY0IDUxNi45MSA3MzAuNDkgNTE3LjgzIDczMS4yNSA1MTguNTUgICBBIDAuNTUgMC41NSAwLjAgMCAxIDczMC44NCA1MTkuNDkgICBRIDcyMy4xMiA1MTkuMDEgNzE1Ljg4IDUxNi42NyAgIEMgNzA3LjgzIDUxNC4wNSA2OTcuODQgNTE0LjEyIDY5Mi4wMSA1MTIuNzMgICBDIDY4Mi43MyA1MTAuNTIgNjczLjY0IDUwNy45MyA2NjQuMTggNTA2Ljg1ICAgQyA2NDMuMDcgNTA0LjQ1IDYxOS45NCA1MDQuMDIgNjAwLjgxIDQ5NS4yNSAgIEMgNTg2LjYxIDQ4OC43MyA1NzUuMzYgNDczLjkwIDU4NS44OCA0NTguNTEgICBaIi8+CjxwYXRoIGZpbGw9IiMwMzAzMDMiIGQ9IiAgIE0gNTU1LjE5IDQ4My4wNSAgIFEgNTQ4LjU5IDQ3OS4zMiA1NDYuNzIgNDczLjk4ICAgQyA1NTAuNjYgNDY5LjgxIDU1Ny43MyA0NTguMjggNTYzLjg2IDQ2Mi4wNiAgIEMgNTcyLjUxIDQ2Ny4zOSA1NjAuMzQgNDc5LjkwIDU1NS4xOSA0ODMuMDUgICBaIi8+CjxwYXRoIGZpbGw9IiNmN2UwYzAiIGQ9IiAgIE0gNTQyLjQ3IDQ2Ny42MCAgIFEgNTQ1LjgwIDQ3MC40OCA1NDYuNzIgNDczLjk4ICAgUSA1NDguNTkgNDc5LjMyIDU1NS4xOSA0ODMuMDUgICBMIDU3NS4zMSA0OTEuODEgICBRIDU3Mi43NCA1MDAuNTAgNTcxLjIyIDUwMy4yMSAgIEMgNTY1LjQ4IDUxMy40MCA1NTQuNjcgNTE2LjgwIDU0NC4wNSA1MTkuNDYgICBRIDUzMS41MCA1MjIuNjEgNTE4Ljc5IDUyNC45NiAgIEMgNTAwLjY0IDUyOC4zMiA0ODQuNjQgNTI4LjM1IDQ2NS42OSA1MjcuMDMgICBRIDQ2Mi4yOSA1MjYuODAgNDYwLjU0IDUyNS41OCAgIEEgMS4xMCAxLjA5IDIyLjMgMCAxIDQ2MC4wOCA1MjQuNDkgICBRIDQ2MC4zNCA1MjIuODggNDYxLjczIDUyMC4yMyAgIFEgNDc0LjAyIDQ5Ni45MSA0OTcuMzkgNDg4Ljc4ICAgQyA1MDEuNjAgNDg3LjMyIDUwNy4yMSA0ODYuNTAgNTEyLjA4IDQ4NS41OSAgIEMgNTIzLjk0IDQ4My4zNSA1MzQuNDkgNDc2LjczIDU0Mi40NyA0NjcuNjAgICBaIi8+CjxwYXRoIGZpbGw9IiMwMzAzMDMiIGQ9IiAgIE0gNzMyLjU2IDQ4Mi4xNiAgIEMgNzYwLjQ4IDQ5Ny4wMyA3NzguNjkgNTEzLjQ1IDc3Ny41NyA1NDcuNzUgICBBIDAuODMgMC44MiAyMy42IDAgMSA3NzYuMTYgNTQ4LjMwICAgQyA3NzQuMTQgNTQ2LjI4IDc2OC4xNSA1MzguODYgNzY1LjcxIDUzOC40NiAgIEwgNzY3LjYyIDUzMy43OSAgIFEgNzUzLjI5IDUwNi4xNSA3MjIuMjAgNTAxLjU2ICAgQyA3MTYuMTcgNTAxLjI4IDcxMS45NyA0OTMuMjMgNzE3LjI2IDQ4OC42OSAgIFEgNzE3LjY1IDQ4OC4zNiA3MTguMTYgNDg4LjM1ICAgTCA3MzAuMDIgNDg4LjIwICAgQSAxLjc5IDEuNzkgMC4wIDAgMCA3MzEuNzYgNDg2LjczICAgTCA3MzIuNTYgNDgyLjE2ICAgWiIvPgo8cGF0aCBmaWxsPSIjZjdlMGMwIiBkPSIgICBNIDEzNS4zMSA1MjQuMzYgICBRIDEzNi44MSA1MjEuMjkgMTM2LjQ2IDUxNy4yNSAgIEEgMS42MSAxLjU5IDU5LjggMCAxIDEzNi43MyA1MTYuMjEgICBRIDEzOS41MCA1MTIuMTYgMTQ1LjM0IDUwOS4zMyAgIFEgMTQ5LjU0IDUwNy4zMCAxNDguNjcgNTAyLjA0ICAgTCAxNDguNzggNTAxLjc0ICAgUSAxNDguOTMgNTAxLjI4IDE0OS40MSA1MDEuMzQgICBRIDE2NS4wNSA1MDMuMTEgMTgwLjAzIDQ5OC40NyAgIEEgMS4xMCAxLjA5IC0zNS4xIDAgMSAxODEuMDIgNDk4LjY0ICAgUSAxODEuMjggNDk4LjgzIDE4MS42MSA0OTguNzcgICBRIDE4Mi4xMCA0OTguNjggMTgyLjU0IDQ5OC45MiAgIFEgMTkyLjY1IDUwNC4yOCAxOTkuODMgNTEzLjIwICAgQyAyMDcuMTIgNTIyLjI1IDE5Ni44NyA1MjguOTkgMTg4LjgzIDUzMC40NCAgIEMgMTcyLjA2IDUzMy40OCAxNTEuNDggNTI4Ljk3IDEzNS4zMSA1MjQuMzYgICBaIi8+CjxwYXRoIGZpbGw9IiNmN2UwYzAiIGQ9IiAgIE0gNzIyLjIwIDUwMS41NiAgIFEgNzUzLjI5IDUwNi4xNSA3NjcuNjIgNTMzLjc5ICAgTCA3MjAuMDEgNTA1LjQ1ICAgUSA3MjAuNTAgNTAzLjEwIDcyMi4yMCA1MDEuNTYgICBaIi8+CjxwYXRoIGZpbGw9IiM3Yzc1NzgiIGQ9IiAgIE0gMTk3LjI1IDU0Ni42OSAgIEMgMTkzLjY0IDU0Ni41NCAxODguNTggNTQ0LjU5IDE5MC45OSA1NDAuMTUgICBDIDE5Mi42MCA1MzcuMTYgMjAxLjYwIDUzNC41NSAyMDYuMDggNTMyLjgyICAgUSAyMDkuNzggNTMxLjQwIDIxMS44MyA1MzQuNDMgICBRIDIxNS42OCA1NDAuMTIgMjE4LjYyIDU0NS43OSAgIEEgMS4wNCAxLjA0IDAuMCAwIDEgMjE3LjY4IDU0Ny4zMSAgIFEgMjA3LjAwIDU0Ny4xMCAxOTcuMjUgNTQ2LjY5ICAgWiIvPgo8L3N2Zz4=" alt="Twocan" class="hdr-logo">
+      <div class="hdr-brand"><strong>TWOCAN AFRICA</strong><span>Technical Management</span></div>
+    </div>
+    <div class="hdr-right">
+      <span class="role-pill" id="rolePill">—</span>
+      <span class="hdr-user" id="hdrUser"></span>
+      <button class="hdr-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <nav class="nav" id="mainNav">
+    <!-- dynamically built based on role -->
+  </nav>
+
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <div id="sec-dashboard" class="sec">
+      <div class="sec-hdr">
+        <div class="sec-title"><div class="sec-bar" style="background:linear-gradient(var(--red),var(--orange))"></div><h2>Dashboard</h2></div>
+      </div>
+      <div class="stats" id="dashStats"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="dashTables"></div>
+    </div>
+
+    <!-- REPAIRS -->
+    <div id="sec-repairs" class="sec">
+      <div class="sec-hdr">
+        <div class="sec-title"><div class="sec-bar" style="background:linear-gradient(var(--blue),#60a5fa)"></div><h2>Repair Tracking</h2></div>
+        <div class="count-pill" id="repairCount">0 records</div>
+      </div>
+      <div class="form-card">
+        <h4>Add Repair Record</h4>
+        <form onsubmit="addRepair(event)" class="fg">
+          <div class="f"><label>Radio Type</label><select id="rType" required><option value="">Select Model</option><option>T522A – Portable UHF</option><option>S200 – Vehicle Mobile</option><option>T199 – Base Station</option><option>Other</option></select></div>
+          <div class="f"><label>Serial Number</label><input id="rSerial" placeholder="e.g. 868255030258256" required></div>
+          <div class="f"><label>Date of Arrival</label><input type="date" id="rArrival" required></div>
+          <div class="f"><label>Expected Return Date</label><input type="date" id="rReturn"></div>
+          <div class="f"><label>Client Name</label><input id="rClient" placeholder="Client / Company"></div>
+          <div class="f"><label>Fault Description</label><textarea id="rDetails" placeholder="Describe the fault" required></textarea></div>
+          <div class="f"><label>Status</label><select id="rStatus"><option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="completed">Completed</option></select></div>
+          <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn" type="submit">➕ Add Repair</button></div>
+        </form>
+      </div>
+      <div class="filter-bar">
+        <label>From:</label><input type="date" id="rFrom">
+        <label>To:</label><input type="date" id="rTo">
+        <button class="filter-btn" onclick="filterRepairs()">Filter</button>
+        <button class="filter-btn" onclick="clearFilter('repairs')">Clear</button>
+        <button class="export-btn" onclick="exportTable('repairsTbl','Repairs')">⬇ Export</button>
+      </div>
+      <div class="tbl-wrap"><table id="repairsTbl">
+        <thead><tr><th>Type</th><th>Serial</th><th>Client</th><th>Arrival</th><th>Return</th><th>Fault</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="repairsBody"><tr><td colspan="8" class="empty-row">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- SALES -->
+    <div id="sec-sales" class="sec">
+      <div class="sec-hdr">
+        <div class="sec-title"><div class="sec-bar" style="background:linear-gradient(var(--green),#86efac)"></div><h2>Sales Register</h2></div>
+        <div class="count-pill" id="salesCount">0 records</div>
+      </div>
+      <div class="form-card">
+        <h4>Add Sale Record</h4>
+        <form onsubmit="addSale(event)" class="fg">
+          <div class="f"><label>Radio Type</label><select id="sType" required><option value="">Select Model</option><option>T522A</option><option>S200</option><option>T199</option><option>Other</option></select></div>
+          <div class="f"><label>Serial Number</label><input id="sSerial" placeholder="Radio serial number" required></div>
+          <div class="f"><label>Sale Date</label><input type="date" id="sDate" required></div>
+          <div class="f"><label>Customer Name</label><input id="sClient" placeholder="Customer / Company"></div>
+          <div class="f"><label>Amount (KES)</label><input type="number" id="sAmount" placeholder="0" required></div>
+          <div class="f"><label>Payment Status</label><select id="sPayment"><option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="partial">Partial</option></select></div>
+          <div class="f"><label>Notes</label><input id="sNotes" placeholder="Optional notes"></div>
+          <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn green" type="submit">➕ Add Sale</button></div>
+        </form>
+      </div>
+      <div class="filter-bar">
+        <label>From:</label><input type="date" id="sFrom">
+        <label>To:</label><input type="date" id="sTo">
+        <button class="filter-btn" onclick="filterSales()">Filter</button>
+        <button class="filter-btn" onclick="clearFilter('sales')">Clear</button>
+        <button class="export-btn" onclick="exportTable('salesTbl','Sales')">⬇ Export</button>
+      </div>
+      <div class="tbl-wrap"><table id="salesTbl">
+        <thead><tr><th>Invoice</th><th>Type</th><th>Serial</th><th>Date</th><th>Customer</th><th>Amount (KES)</th><th>Payment</th><th>Actions</th></tr></thead>
+        <tbody id="salesBody"><tr><td colspan="8" class="empty-row">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- SIM INVENTORY -->
+    <div id="sec-sims" class="sec">
+      <div class="sec-hdr">
+        <div class="sec-title"><div class="sec-bar" style="background:linear-gradient(var(--blue),#93c5fd)"></div><h2>SIM Card Inventory</h2></div>
+        <div class="count-pill" id="simCount">0 records</div>
+      </div>
+      <div class="form-card">
+        <h4>Add SIM Card</h4>
+        <form onsubmit="addSim(event)" class="fg">
+          <div class="f"><label>IoT / ICCID</label><input id="iIoT" placeholder="SIM ICCID or IoT number" required></div>
+          <div class="f"><label>Service Provider</label><select id="iProvider"><option value="">Select</option><option>Safaricom</option><option>Airtel Kenya</option><option>Telkom Kenya</option><option>MTN</option><option>Vodacom</option><option>Other</option></select></div>
+          <div class="f"><label>Assigned To Radio</label><input id="iAssigned" placeholder="Radio serial number"></div>
+          <div class="f"><label>Activation Date</label><input type="date" id="iDate"></div>
+          <div class="f"><label>Status</label><select id="iStatus"><option value="active">Active</option><option value="inactive">Inactive</option><option value="reserved">Reserved</option></select></div>
+          <div class="f"><label>Notes</label><textarea id="iNotes" placeholder="Additional notes"></textarea></div>
+          <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn blue" type="submit">➕ Add SIM</button></div>
+        </form>
+      </div>
+      <div class="filter-bar">
+        <button class="export-btn" onclick="exportTable('simsTbl','SIMs')">⬇ Export</button>
+      </div>
+      <div class="tbl-wrap"><table id="simsTbl">
+        <thead><tr><th>IoT / ICCID</th><th>Provider</th><th>Assigned Radio</th><th>Activation</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+        <tbody id="simBody"><tr><td colspan="7" class="empty-row">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- RADIO HISTORY -->
+    <div id="sec-radios" class="sec">
+      <div class="sec-hdr">
+        <div class="sec-title"><div class="sec-bar" style="background:linear-gradient(var(--yellow),#fcd34d)"></div><h2>Radio History</h2></div>
+      </div>
+      <div class="form-card">
+        <h4>Search Radio by Serial Number</h4>
+        <div class="search-box">
+          <input type="text" id="radioSearch" placeholder="Enter serial number e.g. 868255030258256">
+          <button onclick="searchRadio()">🔍 Search</button>
+        </div>
+      </div>
+      <div id="radioResult"></div>
+    </div>
+
+    <!-- FINANCE -->
+    <div id="sec-finance" class="sec">
+      <div class="sec-hdr">
+        <div class="sec-title"><div class="sec-bar" style="background:linear-gradient(var(--purple),#d8b4fe)"></div><h2>Finance</h2></div>
+      </div>
+      <div class="sub-tabs">
+        <button class="sub-tab on" onclick="showSubTab('fin-overview',this)">📊 Overview</button>
+        <button class="sub-tab" onclick="showSubTab('fin-income',this)">💰 Income & Expenses</button>
+        <button class="sub-tab" onclick="showSubTab('fin-invoices',this)">🧾 Invoices & Quotes</button>
+        <button class="sub-tab" onclick="showSubTab('fin-payable',this)">📤 Accounts Payable</button>
+        <button class="sub-tab" onclick="showSubTab('fin-receivable',this)">📥 Accounts Receivable</button>
+        <button class="sub-tab" onclick="showSubTab('fin-petty',this)">💵 Petty Cash</button>
+        <button class="sub-tab" onclick="showSubTab('fin-payroll',this)">👷 Payroll</button>
+        <button class="sub-tab" onclick="showSubTab('fin-pl',this)">📈 P&amp;L Report</button>
+      </div>
+
+      <!-- Overview -->
+      <div id="fin-overview" class="sub-sec on">
+        <div class="stats" id="finStats"></div>
+      </div>
+
+      <!-- Income & Expenses -->
+      <div id="fin-income" class="sub-sec">
+        <div class="form-card">
+          <h4>Add Income / Expense</h4>
+          <form onsubmit="addTransaction(event)" class="fg">
+            <div class="f"><label>Type</label><select id="txType"><option value="income">Income</option><option value="expense">Expense</option></select></div>
+            <div class="f"><label>Category</label><select id="txCat"><option>Radio Sale</option><option>Repair Service</option><option>SIM Sale</option><option>Consultation</option><option>Rent</option><option>Salaries</option><option>Supplies</option><option>Transport</option><option>Utilities</option><option>Other</option></select></div>
+            <div class="f"><label>Amount (KES)</label><input type="number" id="txAmount" placeholder="0" required></div>
+            <div class="f"><label>Date</label><input type="date" id="txDate" required></div>
+            <div class="f"><label>Description</label><input id="txDesc" placeholder="Brief description" required></div>
+            <div class="f"><label>Reference / Receipt No.</label><input id="txRef" placeholder="Optional"></div>
+            <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn" type="submit">➕ Add Entry</button></div>
+          </form>
+        </div>
+        <div class="filter-bar">
+          <label>From:</label><input type="date" id="txFrom">
+          <label>To:</label><input type="date" id="txTo">
+          <button class="filter-btn" onclick="filterTx()">Filter</button>
+          <button class="filter-btn" onclick="clearFilter('tx')">Clear</button>
+          <button class="export-btn" onclick="exportTable('txTbl','Transactions')">⬇ Export</button>
+        </div>
+        <div class="tbl-wrap"><table id="txTbl">
+          <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Reference</th><th>Amount (KES)</th><th>Actions</th></tr></thead>
+          <tbody id="txBody"><tr><td colspan="7" class="empty-row">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- Invoices -->
+      <div id="fin-invoices" class="sub-sec">
+        <div class="form-card">
+          <h4>Create Invoice / Quote</h4>
+          <form onsubmit="addInvoice(event)" class="fg">
+            <div class="f"><label>Document Type</label><select id="invType"><option value="invoice">Invoice</option><option value="quote">Quote</option></select></div>
+            <div class="f"><label>Client Name</label><input id="invClient" placeholder="Client / Company" required></div>
+            <div class="f"><label>Date</label><input type="date" id="invDate" required></div>
+            <div class="f"><label>Due Date</label><input type="date" id="invDue"></div>
+            <div class="f"><label>Amount (KES)</label><input type="number" id="invAmount" placeholder="0" required></div>
+            <div class="f"><label>Description of Services</label><textarea id="invDesc" placeholder="Services rendered" required></textarea></div>
+            <div class="f"><label>Status</label><select id="invStatus"><option value="unpaid">Unpaid</option><option value="paid">Paid</option><option value="partial">Partial</option></select></div>
+            <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn" type="submit">➕ Create</button></div>
+          </form>
+        </div>
+        <div class="filter-bar">
+          <button class="export-btn" onclick="exportTable('invTbl','Invoices')">⬇ Export</button>
+        </div>
+        <div class="tbl-wrap"><table id="invTbl">
+          <thead><tr><th>No.</th><th>Type</th><th>Client</th><th>Date</th><th>Due</th><th>Amount (KES)</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="invBody"><tr><td colspan="8" class="empty-row">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- Accounts Payable -->
+      <div id="fin-payable" class="sub-sec">
+        <div class="form-card">
+          <h4>Add Account Payable (What We Owe)</h4>
+          <form onsubmit="addPayable(event)" class="fg">
+            <div class="f"><label>Supplier / Creditor</label><input id="apSupplier" placeholder="Supplier name" required></div>
+            <div class="f"><label>Amount Owed (KES)</label><input type="number" id="apAmount" placeholder="0" required></div>
+            <div class="f"><label>Due Date</label><input type="date" id="apDue" required></div>
+            <div class="f"><label>Description</label><input id="apDesc" placeholder="What is this for?" required></div>
+            <div class="f"><label>Status</label><select id="apStatus"><option value="unpaid">Unpaid</option><option value="partial">Partial</option><option value="paid">Paid</option></select></div>
+            <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn" type="submit">➕ Add</button></div>
+          </form>
+        </div>
+        <div class="filter-bar"><button class="export-btn" onclick="exportTable('apTbl','Payables')">⬇ Export</button></div>
+        <div class="tbl-wrap"><table id="apTbl">
+          <thead><tr><th>Supplier</th><th>Description</th><th>Amount (KES)</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="apBody"><tr><td colspan="6" class="empty-row">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- Accounts Receivable -->
+      <div id="fin-receivable" class="sub-sec">
+        <div class="form-card">
+          <h4>Add Account Receivable (What We Are Owed)</h4>
+          <form onsubmit="addReceivable(event)" class="fg">
+            <div class="f"><label>Client / Debtor</label><input id="arClient" placeholder="Client name" required></div>
+            <div class="f"><label>Amount Owed (KES)</label><input type="number" id="arAmount" placeholder="0" required></div>
+            <div class="f"><label>Due Date</label><input type="date" id="arDue" required></div>
+            <div class="f"><label>Description</label><input id="arDesc" placeholder="What is this for?" required></div>
+            <div class="f"><label>Status</label><select id="arStatus"><option value="unpaid">Unpaid</option><option value="partial">Partial</option><option value="paid">Paid</option></select></div>
+            <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn" type="submit">➕ Add</button></div>
+          </form>
+        </div>
+        <div class="filter-bar"><button class="export-btn" onclick="exportTable('arTbl','Receivables')">⬇ Export</button></div>
+        <div class="tbl-wrap"><table id="arTbl">
+          <thead><tr><th>Client</th><th>Description</th><th>Amount (KES)</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="arBody"><tr><td colspan="6" class="empty-row">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- Petty Cash -->
+      <div id="fin-petty" class="sub-sec">
+        <div class="form-card">
+          <h4>Petty Cash Entry</h4>
+          <form onsubmit="addPetty(event)" class="fg">
+            <div class="f"><label>Type</label><select id="pcType"><option value="in">Cash In</option><option value="out">Cash Out</option></select></div>
+            <div class="f"><label>Amount (KES)</label><input type="number" id="pcAmount" placeholder="0" required></div>
+            <div class="f"><label>Date</label><input type="date" id="pcDate" required></div>
+            <div class="f"><label>Purpose</label><input id="pcPurpose" placeholder="What was it used for?" required></div>
+            <div class="f"><label>Received / Paid By</label><input id="pcPerson" placeholder="Staff name"></div>
+            <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn" type="submit">➕ Add Entry</button></div>
+          </form>
+        </div>
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px">
+          <div class="stat-label">Petty Cash Balance</div>
+          <div class="stat-val" id="pettyCashBal" style="font-size:32px">KES 0</div>
+        </div>
+        <div class="filter-bar"><button class="export-btn" onclick="exportTable('pcTbl','PettyCash')">⬇ Export</button></div>
+        <div class="tbl-wrap"><table id="pcTbl">
+          <thead><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Person</th><th>Amount (KES)</th><th>Actions</th></tr></thead>
+          <tbody id="pcBody"><tr><td colspan="6" class="empty-row">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- Payroll -->
+      <div id="fin-payroll" class="sub-sec">
+        <div class="form-card">
+          <h4>Add Payroll Entry</h4>
+          <form onsubmit="addPayroll(event)" class="fg">
+            <div class="f"><label>Staff Name</label><input id="prName" placeholder="Full name" required></div>
+            <div class="f"><label>Role / Position</label><input id="prRole" placeholder="e.g. Technician"></div>
+            <div class="f"><label>Gross Salary (KES)</label><input type="number" id="prGross" placeholder="0" required></div>
+            <div class="f"><label>Deductions (KES)</label><input type="number" id="prDeduct" placeholder="0" value="0"></div>
+            <div class="f"><label>Pay Period</label><input id="prPeriod" placeholder="e.g. March 2026" required></div>
+            <div class="f"><label>Payment Date</label><input type="date" id="prDate" required></div>
+            <div class="f"><label>Status</label><select id="prStatus"><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select></div>
+            <div class="f" style="justify-content:flex-end"><label style="visibility:hidden">x</label><button class="sub-btn" type="submit">➕ Add</button></div>
+          </form>
+        </div>
+        <div class="filter-bar"><button class="export-btn" onclick="exportTable('prTbl','Payroll')">⬇ Export</button></div>
+        <div class="tbl-wrap"><table id="prTbl">
+          <thead><tr><th>Staff</th><th>Role</th><th>Period</th><th>Gross (KES)</th><th>Deductions</th><th>Net Pay</th><th>Pay Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="prBody"><tr><td colspan="9" class="empty-row">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- P&L -->
+      <div id="fin-pl" class="sub-sec">
+        <div class="filter-bar">
+          <label>From:</label><input type="date" id="plFrom">
+          <label>To:</label><input type="date" id="plTo">
+          <button class="filter-btn" onclick="buildPL()">Generate Report</button>
+          <button class="export-btn" onclick="exportPL()">⬇ Export</button>
+        </div>
+        <div class="tbl-wrap" id="plWrap">
+          <table class="pl-table">
+            <tbody id="plBody"><tr><td colspan="2" class="empty-row">Select a date range and click Generate Report</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- end finance -->
+
+  </main>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3 id="editTitle">Edit Record</h3>
+    <div id="editBody"></div>
+    <div class="modal-foot">
+      <button class="m-cancel" onclick="closeModal()">✖ Cancel</button>
+      <button class="m-save" onclick="saveEdit()">💾 SAVE CHANGES</button>
+    </div>
+  </div>
+</div>
+
+<!-- RADIO DETAIL MODAL -->
+<div class="modal-bg" id="radioModal">
+  <div class="modal" style="max-width:780px">
+    <h3 id="radioModalTitle">Radio Details</h3>
+    <div id="radioModalBody"></div>
+    <div class="modal-foot">
+      <button class="m-cancel" onclick="closeRadioModal()" style="flex:1">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  FIREBASE
+// ══════════════════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:"AIzaSyAExzqIwlAH1ntffdei_4izYws54_TIRMI",
+  authDomain:"tracker-1f84b.firebaseapp.com",
+  projectId:"tracker-1f84b",
+  storageBucket:"tracker-1f84b.firebasestorage.app",
+  messagingSenderId:"781054078792",
+  appId:"1:781054078792:web:b54b734c095a8e06480d7d"
+});
+const auth=firebase.auth();
+const db=firebase.firestore();
+db.enablePersistence({synchronizeTabs:true}).catch(e=>console.warn(e.code));
+
+// ══════════════════════════════════════════════════════
+//  ROLES  —  map email prefix to role
+// ══════════════════════════════════════════════════════
+const ROLES={
+  'admin':'admin',
+  'accountant':'accountant',
+  'tech':'technician',
+  'sales':'sales'
+};
+// Role permissions: which sections each role can see
+const ROLE_TABS={
+  admin:     ['dashboard','repairs','sales','sims','radios','finance'],
+  accountant:['dashboard','sales','finance'],
+  technician:['repairs','radios','sims'],
+  sales:     ['sales','radios']
+};
+const TAB_LABELS={
+  dashboard:'📊 Dashboard',repairs:'🔧 Repairs',sales:'💰 Sales',
+  sims:'📱 SIM Cards',radios:'📡 Radio History',finance:'💼 Finance'
+};
+
+let currentRole='admin';
+let invoiceCounter=1000;
+
+// ══════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════
+function toggleEye(){
+  const i=document.getElementById('lPass'),b=document.getElementById('eyeBtn');
+  i.type=i.type==='password'?'text':'password';
+  b.textContent=i.type==='password'?'👁':'🙈';
+}
+function doLogin(e){
+  e.preventDefault();
+  const btn=document.getElementById('lBtn');
+  btn.disabled=true;btn.textContent='Signing in…';
+  auth.signInWithEmailAndPassword(
+    document.getElementById('lEmail').value.trim(),
+    document.getElementById('lPass').value
+  ).catch(err=>{
+    document.getElementById('lErr').textContent=err.message;
+    btn.disabled=false;btn.textContent='LOGIN TO DASHBOARD';
+  });
+}
+function doLogout(){auth.signOut();}
+function makeTest(){
+  auth.createUserWithEmailAndPassword('admin@twocan.com','Twocan123!')
+    .then(()=>alert('✅ Test account created!\nEmail: admin@twocan.com\nPassword: Twocan123!'))
+    .catch(err=>{
+      if(err.code==='auth/email-already-in-use') alert('Account exists.\nEmail: admin@twocan.com\nPassword: Twocan123!');
+      else alert(err.message);
+    });
+}
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    // Determine role from email prefix
+    const prefix=user.email.split('@')[0].toLowerCase();
+    currentRole=ROLES[prefix]||'admin';
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('app').classList.add('on');
+    document.getElementById('hdrUser').textContent=user.email;
+    const rp=document.getElementById('rolePill');
+    rp.textContent=currentRole.toUpperCase();
+    rp.className='role-pill role-'+currentRole;
+    buildNav();
+    loadAll();
+    // Show first allowed tab
+    const tabs=ROLE_TABS[currentRole];
+    if(tabs.length) showTab('sec-'+tabs[0],null);
+  } else {
+    document.getElementById('loginWrap').style.display='flex';
+    document.getElementById('app').classList.remove('on');
+    const btn=document.getElementById('lBtn');
+    btn.disabled=false;btn.textContent='LOGIN TO DASHBOARD';
+  }
+});
+
+// ══════════════════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════════════════
+function buildNav(){
+  const nav=document.getElementById('mainNav');
+  nav.innerHTML='';
+  ROLE_TABS[currentRole].forEach(t=>{
+    const b=document.createElement('button');
+    b.className='nav-btn';
+    b.textContent=TAB_LABELS[t];
+    b.onclick=()=>{showTab('sec-'+t,b);};
+    nav.appendChild(b);
+  });
+}
+function showTab(id,btn){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  const el=document.getElementById(id);
+  if(el) el.classList.add('on');
+  if(btn) btn.classList.add('on');
+  else{
+    const btns=document.querySelectorAll('.nav-btn');
+    btns.forEach(b=>{if(b.textContent===TAB_LABELS[id.replace('sec-','')])b.classList.add('on');});
+  }
+  if(id==='sec-finance') loadFinanceStats();
+  if(id==='sec-dashboard') loadDashboard();
+}
+function showSubTab(id,btn){
+  document.querySelectorAll('.sub-sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.sub-tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ══════════════════════════════════════════════════════
+//  TOAST & NETWORK
+// ══════════════════════════════════════════════════════
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=(type==='ok'?'✓ ':'✕ ')+msg;
+  t.className='toast '+type;
+  t.style.display='block';
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.style.display='none',3500);
+}
+window.addEventListener('offline',()=>document.getElementById('netBadge').style.display='block');
+window.addEventListener('online', ()=>document.getElementById('netBadge').style.display='none');
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+const fmt=n=>Number(n||0).toLocaleString('en-KE');
+function badge(cls,label){return`<span class="badge b-${cls}">${label}</span>`;}
+function statusBadge(s){
+  const m={'pending':'pending','in-progress':'in-progress','completed':'completed','active':'active','inactive':'inactive','reserved':'reserved','paid':'paid','unpaid':'unpaid','partial':'partial','income':'income','expense':'expense','overdue':'overdue','in':'active','out':'expense'};
+  return badge(m[s]||'pending',s||'pending');
+}
+function sel(opts,val){return opts.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('');}
+const F=s=>s?`<div class="f">${s}</div>`:'';
+
+// Invoice number generator
+function nextInvoiceNo(){
+  invoiceCounter++;
+  const y=new Date().getFullYear();
+  return `TW-${y}-${String(invoiceCounter).padStart(4,'0')}`;
+}
+
+// ══════════════════════════════════════════════════════
+//  LOAD ALL
+// ══════════════════════════════════════════════════════
+function loadAll(){
+  loadRepairs();loadSales();loadSims();loadTransactions();
+  loadInvoices();loadPayables();loadReceivables();loadPetty();loadPayroll();
+}
+
+// ── REPAIRS ──
+let allRepairs=[];
+function loadRepairs(){
+  db.collection('repairs').orderBy('createdAt','desc').onSnapshot(snap=>{
+    allRepairs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderRepairs(allRepairs);
+    loadDashboard();
+  },e=>console.error(e));
+}
+function renderRepairs(data){
+  const n=data.length;
+  document.getElementById('repairCount').textContent=n+' record'+(n!==1?'s':'');
+  document.getElementById('repairsBody').innerHTML=n===0?`<tr><td colspan="8" class="empty-row">No repair records yet</td></tr>`:
+    data.map(r=>`<tr>
+      <td><strong>${r.type||'-'}</strong></td>
+      <td class="mono">${r.serial||'-'}</td>
+      <td>${r.client||'-'}</td>
+      <td>${r.arrival||'-'}</td>
+      <td>${r.returnDate||'—'}</td>
+      <td style="max-width:160px;white-space:normal;font-size:12px">${r.details||'-'}</td>
+      <td>${statusBadge(r.status||'pending')}</td>
+      <td><div class="acts">
+        <button class="act-edit" onclick="openEditRepair('${r.id}')">✏️ Edit</button>
+        <button class="act-del" onclick="del('repairs','${r.id}')">🗑</button>
+      </div></td></tr>`).join('');
+}
+function filterRepairs(){
+  const from=document.getElementById('rFrom').value;
+  const to=document.getElementById('rTo').value;
+  const filtered=allRepairs.filter(r=>{
+    if(from&&r.arrival<from)return false;
+    if(to&&r.arrival>to)return false;
+    return true;
+  });
+  renderRepairs(filtered);
+}
+
+// ── SALES ──
+let allSales=[];
+function loadSales(){
+  db.collection('sales').orderBy('createdAt','desc').onSnapshot(snap=>{
+    allSales=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderSales(allSales);
+    loadDashboard();
+  },e=>console.error(e));
+}
+function renderSales(data){
+  const n=data.length;
+  document.getElementById('salesCount').textContent=n+' record'+(n!==1?'s':'');
+  document.getElementById('salesBody').innerHTML=n===0?`<tr><td colspan="8" class="empty-row">No sales records yet</td></tr>`:
+    data.map(r=>`<tr>
+      <td class="mono" style="color:var(--orange)">${r.invoiceNo||'—'}</td>
+      <td><strong>${r.type||'-'}</strong></td>
+      <td class="mono">${r.serial||'-'}</td>
+      <td>${r.date||'-'}</td>
+      <td>${r.client||'-'}</td>
+      <td><strong>KES ${fmt(r.amount)}</strong></td>
+      <td>${statusBadge(r.payment||'unpaid')}</td>
+      <td><div class="acts">
+        <button class="act-edit" onclick="openEditSale('${r.id}')">✏️ Edit</button>
+        <button class="act-del" onclick="del('sales','${r.id}')">🗑</button>
+      </div></td></tr>`).join('');
+}
+function filterSales(){
+  const from=document.getElementById('sFrom').value;
+  const to=document.getElementById('sTo').value;
+  const filtered=allSales.filter(r=>{
+    if(from&&r.date<from)return false;
+    if(to&&r.date>to)return false;
+    return true;
+  });
+  renderSales(filtered);
+}
+
+// ── SIMS ──
+function loadSims(){
+  db.collection('sims').orderBy('createdAt','desc').onSnapshot(snap=>{
+    const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const n=data.length;
+    document.getElementById('simCount').textContent=n+' record'+(n!==1?'s':'');
+    document.getElementById('simBody').innerHTML=n===0?`<tr><td colspan="7" class="empty-row">No SIM cards yet</td></tr>`:
+      data.map(r=>`<tr>
+        <td class="mono">${r.iot||'-'}</td>
+        <td>${r.provider||'-'}</td>
+        <td class="mono">${r.assigned||'Not assigned'}</td>
+        <td>${r.date||'-'}</td>
+        <td>${statusBadge(r.status||'inactive')}</td>
+        <td style="max-width:140px;white-space:normal;font-size:12px">${r.notes||'—'}</td>
+        <td><div class="acts">
+          <button class="act-edit" onclick="openEditSim('${r.id}')">✏️ Edit</button>
+          <button class="act-del" onclick="del('sims','${r.id}')">🗑</button>
+        </div></td></tr>`).join('');
+  });
+}
+
+// ── TRANSACTIONS ──
+let allTx=[];
+function loadTransactions(){
+  db.collection('transactions').orderBy('createdAt','desc').onSnapshot(snap=>{
+    allTx=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderTx(allTx);
+    loadFinanceStats();
+  });
+}
+function renderTx(data){
+  document.getElementById('txBody').innerHTML=data.length===0?`<tr><td colspan="7" class="empty-row">No entries yet</td></tr>`:
+    data.map(r=>`<tr>
+      <td>${r.date||'-'}</td>
+      <td>${statusBadge(r.type||'income')}</td>
+      <td>${r.category||'-'}</td>
+      <td>${r.description||'-'}</td>
+      <td class="mono">${r.reference||'—'}</td>
+      <td style="color:${r.type==='income'?'#4ade80':'#f87171'};font-weight:700">KES ${fmt(r.amount)}</td>
+      <td><div class="acts">
+        <button class="act-del" onclick="del('transactions','${r.id}')">🗑</button>
+      </div></td></tr>`).join('');
+}
+function filterTx(){
+  const from=document.getElementById('txFrom').value;
+  const to=document.getElementById('txTo').value;
+  renderTx(allTx.filter(r=>{
+    if(from&&r.date<from)return false;
+    if(to&&r.date>to)return false;
+    return true;
+  }));
+}
+
+// ── INVOICES ──
+let allInvoices=[];
+function loadInvoices(){
+  db.collection('invoices').orderBy('createdAt','desc').onSnapshot(snap=>{
+    allInvoices=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(allInvoices.length>0){
+      const nums=allInvoices.map(i=>parseInt((i.number||'TW-0-1000').split('-')[2]||1000));
+      invoiceCounter=Math.max(...nums);
+    }
+    renderInvoices(allInvoices);
+  });
+}
+function renderInvoices(data){
+  document.getElementById('invBody').innerHTML=data.length===0?`<tr><td colspan="8" class="empty-row">No invoices yet</td></tr>`:
+    data.map(r=>{
+      const today=new Date().toISOString().split('T')[0];
+      const overdue=r.status!=='paid'&&r.due&&r.due<today;
+      return`<tr>
+        <td class="mono" style="color:var(--orange)">${r.number||'—'}</td>
+        <td>${r.docType==='quote'?badge('reserved','QUOTE'):badge('blue','INVOICE')}</td>
+        <td>${r.client||'-'}</td>
+        <td>${r.date||'-'}</td>
+        <td style="color:${overdue?'#f87171':'inherit'}">${r.due||'—'}${overdue?' ⚠️':''}</td>
+        <td><strong>KES ${fmt(r.amount)}</strong></td>
+        <td>${overdue?badge('overdue','OVERDUE'):statusBadge(r.status||'unpaid')}</td>
+        <td><div class="acts">
+          <button class="act-edit" onclick="openEditInvoice('${r.id}')">✏️ Edit</button>
+          <button class="act-del" onclick="del('invoices','${r.id}')">🗑</button>
+        </div></td></tr>`;
+    }).join('');
+}
+
+// ── PAYABLES ──
+let allPayables=[];
+function loadPayables(){
+  db.collection('payables').orderBy('createdAt','desc').onSnapshot(snap=>{
+    allPayables=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderPayables(allPayables);
+    loadFinanceStats();
+  });
+}
+function renderPayables(data){
+  document.getElementById('apBody').innerHTML=data.length===0?`<tr><td colspan="6" class="empty-row">No payables yet</td></tr>`:
+    data.map(r=>{
+      const today=new Date().toISOString().split('T')[0];
+      const overdue=r.status!=='paid'&&r.due&&r.due<today;
+      return`<tr>
+        <td>${r.supplier||'-'}</td>
+        <td>${r.description||'-'}</td>
+        <td style="color:#f87171;font-weight:700">KES ${fmt(r.amount)}</td>
+        <td style="color:${overdue?'#f87171':'inherit'}">${r.due||'—'}${overdue?' ⚠️':''}</td>
+        <td>${overdue?badge('overdue','OVERDUE'):statusBadge(r.status||'unpaid')}</td>
+        <td><div class="acts">
+          <button class="act-edit" onclick="openEditPayable('${r.id}')">✏️ Edit</button>
+          <button class="act-del" onclick="del('payables','${r.id}')">🗑</button>
+        </div></td></tr>`;
+    }).join('');
+}
+
+// ── RECEIVABLES ──
+let allReceivables=[];
+function loadReceivables(){
+  db.collection('receivables').orderBy('createdAt','desc').onSnapshot(snap=>{
+    allReceivables=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderReceivables(allReceivables);
+    loadFinanceStats();
+  });
+}
+function renderReceivables(data){
+  document.getElementById('arBody').innerHTML=data.length===0?`<tr><td colspan="6" class="empty-row">No receivables yet</td></tr>`:
+    data.map(r=>{
+      const today=new Date().toISOString().split('T')[0];
+      const overdue=r.status!=='paid'&&r.due&&r.due<today;
+      return`<tr>
+        <td>${r.client||'-'}</td>
+        <td>${r.description||'-'}</td>
+        <td style="color:#4ade80;font-weight:700">KES ${fmt(r.amount)}</td>
+        <td style="color:${overdue?'#f87171':'inherit'}">${r.due||'—'}${overdue?' ⚠️':''}</td>
+        <td>${overdue?badge('overdue','OVERDUE'):statusBadge(r.status||'unpaid')}</td>
+        <td><div class="acts">
+          <button class="act-edit" onclick="openEditReceivable('${r.id}')">✏️ Edit</button>
+          <button class="act-del" onclick="del('receivables','${r.id}')">🗑</button>
+        </div></td></tr>`;
+    }).join('');
+}
+
+// ── PETTY CASH ──
+let allPetty=[];
+function loadPetty(){
+  db.collection('pettycash').orderBy('createdAt','desc').onSnapshot(snap=>{
+    allPetty=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderPetty(allPetty);
+  });
+}
+function renderPetty(data){
+  let bal=0;
+  data.forEach(r=>{if(r.type==='in')bal+=Number(r.amount||0);else bal-=Number(r.amount||0);});
+  document.getElementById('pettyCashBal').textContent='KES '+fmt(bal);
+  document.getElementById('pcBody').innerHTML=data.length===0?`<tr><td colspan="6" class="empty-row">No entries yet</td></tr>`:
+    data.map(r=>`<tr>
+      <td>${r.date||'-'}</td>
+      <td>${r.type==='in'?badge('active','CASH IN'):badge('expense','CASH OUT')}</td>
+      <td>${r.purpose||'-'}</td>
+      <td>${r.person||'-'}</td>
+      <td style="color:${r.type==='in'?'#4ade80':'#f87171'};font-weight:700">KES ${fmt(r.amount)}</td>
+      <td><div class="acts">
+        <button class="act-del" onclick="del('pettycash','${r.id}')">🗑</button>
+      </div></td></tr>`).join('');
+}
+
+// ── PAYROLL ──
+function loadPayroll(){
+  db.collection('payroll').orderBy('createdAt','desc').onSnapshot(snap=>{
+    const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+    document.getElementById('prBody').innerHTML=data.length===0?`<tr><td colspan="9" class="empty-row">No payroll entries yet</td></tr>`:
+      data.map(r=>{
+        const net=Number(r.gross||0)-Number(r.deductions||0);
+        return`<tr>
+          <td><strong>${r.name||'-'}</strong></td>
+          <td>${r.role||'-'}</td>
+          <td>${r.period||'-'}</td>
+          <td>KES ${fmt(r.gross)}</td>
+          <td style="color:#f87171">KES ${fmt(r.deductions)}</td>
+          <td style="color:#4ade80;font-weight:700">KES ${fmt(net)}</td>
+          <td>${r.date||'-'}</td>
+          <td>${statusBadge(r.status||'unpaid')}</td>
+          <td><div class="acts">
+            <button class="act-edit" onclick="openEditPayroll('${r.id}')">✏️ Edit</button>
+            <button class="act-del" onclick="del('payroll','${r.id}')">🗑</button>
+          </div></td></tr>`;
+      }).join('');
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  ADD RECORDS
+// ══════════════════════════════════════════════════════
+function addRepair(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  db.collection('repairs').add({
+    type:document.getElementById('rType').value,
+    serial:document.getElementById('rSerial').value.trim(),
+    arrival:document.getElementById('rArrival').value,
+    returnDate:document.getElementById('rReturn').value,
+    client:document.getElementById('rClient').value.trim(),
+    details:document.getElementById('rDetails').value.trim(),
+    status:document.getElementById('rStatus').value,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{e.target.reset();toast('Repair record saved!');})
+  .catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+function addSale(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  const invNo=nextInvoiceNo();
+  const amount=Number(document.getElementById('sAmount').value);
+  const saleData={
+    type:document.getElementById('sType').value,
+    serial:document.getElementById('sSerial').value.trim(),
+    date:document.getElementById('sDate').value,
+    client:document.getElementById('sClient').value.trim(),
+    amount:amount,
+    payment:document.getElementById('sPayment').value,
+    notes:document.getElementById('sNotes').value.trim(),
+    invoiceNo:invNo,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  db.collection('sales').add(saleData).then(()=>{
+    // Auto-add to finance as income
+    db.collection('transactions').add({
+      type:'income',category:'Radio Sale',
+      description:`Sale of ${saleData.type} (${saleData.serial}) to ${saleData.client}`,
+      amount:amount,date:saleData.date,reference:invNo,
+      autoFromSale:true,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    e.target.reset();
+    toast(`Sale saved! Invoice: ${invNo}`);
+  }).catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+function addSim(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  db.collection('sims').add({
+    iot:document.getElementById('iIoT').value.trim(),
+    provider:document.getElementById('iProvider').value,
+    assigned:document.getElementById('iAssigned').value.trim(),
+    date:document.getElementById('iDate').value,
+    status:document.getElementById('iStatus').value,
+    notes:document.getElementById('iNotes').value.trim(),
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{e.target.reset();toast('SIM card added!');})
+  .catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+function addTransaction(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  db.collection('transactions').add({
+    type:document.getElementById('txType').value,
+    category:document.getElementById('txCat').value,
+    amount:Number(document.getElementById('txAmount').value),
+    date:document.getElementById('txDate').value,
+    description:document.getElementById('txDesc').value.trim(),
+    reference:document.getElementById('txRef').value.trim(),
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{e.target.reset();toast('Transaction saved!');})
+  .catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+function addInvoice(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  const num=nextInvoiceNo();
+  db.collection('invoices').add({
+    number:num,
+    docType:document.getElementById('invType').value,
+    client:document.getElementById('invClient').value.trim(),
+    date:document.getElementById('invDate').value,
+    due:document.getElementById('invDue').value,
+    amount:Number(document.getElementById('invAmount').value),
+    description:document.getElementById('invDesc').value.trim(),
+    status:document.getElementById('invStatus').value,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{e.target.reset();toast(`${document.getElementById('invType').value==='invoice'?'Invoice':'Quote'} ${num} created!`);})
+  .catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+function addPayable(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  db.collection('payables').add({
+    supplier:document.getElementById('apSupplier').value.trim(),
+    amount:Number(document.getElementById('apAmount').value),
+    due:document.getElementById('apDue').value,
+    description:document.getElementById('apDesc').value.trim(),
+    status:document.getElementById('apStatus').value,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{e.target.reset();toast('Payable added!');})
+  .catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+function addReceivable(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  db.collection('receivables').add({
+    client:document.getElementById('arClient').value.trim(),
+    amount:Number(document.getElementById('arAmount').value),
+    due:document.getElementById('arDue').value,
+    description:document.getElementById('arDesc').value.trim(),
+    status:document.getElementById('arStatus').value,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{e.target.reset();toast('Receivable added!');})
+  .catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+function addPetty(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  db.collection('pettycash').add({
+    type:document.getElementById('pcType').value,
+    amount:Number(document.getElementById('pcAmount').value),
+    date:document.getElementById('pcDate').value,
+    purpose:document.getElementById('pcPurpose').value.trim(),
+    person:document.getElementById('pcPerson').value.trim(),
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{e.target.reset();toast('Petty cash entry saved!');})
+  .catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+function addPayroll(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
+  const gross=Number(document.getElementById('prGross').value);
+  const deduct=Number(document.getElementById('prDeduct').value||0);
+  db.collection('payroll').add({
+    name:document.getElementById('prName').value.trim(),
+    role:document.getElementById('prRole').value.trim(),
+    gross:gross,deductions:deduct,net:gross-deduct,
+    period:document.getElementById('prPeriod').value.trim(),
+    date:document.getElementById('prDate').value,
+    status:document.getElementById('prStatus').value,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{e.target.reset();toast('Payroll entry saved!');})
+  .catch(err=>toast(err.message,'err')).finally(()=>btn.disabled=false);
+}
+
+// ══════════════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════════════
+function del(col,id){
+  if(!confirm('Delete this record permanently?'))return;
+  db.collection(col).doc(id).delete()
+    .then(()=>toast('Deleted'))
+    .catch(err=>toast(err.message,'err'));
+}
+function clearFilter(type){
+  if(type==='repairs'){document.getElementById('rFrom').value='';document.getElementById('rTo').value='';renderRepairs(allRepairs);}
+  if(type==='sales'){document.getElementById('sFrom').value='';document.getElementById('sTo').value='';renderSales(allSales);}
+  if(type==='tx'){document.getElementById('txFrom').value='';document.getElementById('txTo').value='';renderTx(allTx);}
+}
+
+// ══════════════════════════════════════════════════════
+//  EDIT MODAL
+// ══════════════════════════════════════════════════════
+let editCol='',editId='';
+function closeModal(){document.getElementById('editModal').classList.remove('on');}
+document.getElementById('editModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+function openEditRepair(id){
+  editCol='repairs';editId=id;
+  db.collection('repairs').doc(id).get().then(doc=>{
+    const r=doc.data();
+    document.getElementById('editTitle').textContent='Edit Repair Record';
+    document.getElementById('editBody').innerHTML=`<div class="fg">
+      <div class="f"><label>Radio Type</label><select id="e_type">${sel(['T522A – Portable UHF','S200 – Vehicle Mobile','T199 – Base Station','Other'],r.type)}</select></div>
+      <div class="f"><label>Serial</label><input id="e_serial" value="${r.serial||''}"></div>
+      <div class="f"><label>Arrival</label><input type="date" id="e_arrival" value="${r.arrival||''}"></div>
+      <div class="f"><label>Return / Completion Date</label><input type="date" id="e_return" value="${r.returnDate||''}"></div>
+      <div class="f"><label>Client</label><input id="e_client" value="${r.client||''}"></div>
+      <div class="f"><label>Fault Description</label><textarea id="e_details">${r.details||''}</textarea></div>
+      <div class="f"><label>Status</label><select id="e_status">${sel(['pending','in-progress','completed'],r.status)}</select></div>
+    </div>`;
+    document.getElementById('editModal').classList.add('on');
+  });
+}
+function openEditSale(id){
+  editCol='sales';editId=id;
+  db.collection('sales').doc(id).get().then(doc=>{
+    const r=doc.data();
+    document.getElementById('editTitle').textContent='Edit Sale Record';
+    document.getElementById('editBody').innerHTML=`<div class="fg">
+      <div class="f"><label>Type</label><select id="e_type">${sel(['T522A','S200','T199','Other'],r.type)}</select></div>
+      <div class="f"><label>Serial</label><input id="e_serial" value="${r.serial||''}"></div>
+      <div class="f"><label>Date</label><input type="date" id="e_date" value="${r.date||''}"></div>
+      <div class="f"><label>Customer</label><input id="e_client" value="${r.client||''}"></div>
+      <div class="f"><label>Amount (KES)</label><input type="number" id="e_amount" value="${r.amount||''}"></div>
+      <div class="f"><label>Payment</label><select id="e_payment">${sel(['paid','unpaid','partial'],r.payment)}</select></div>
+    </div>`;
+    document.getElementById('editModal').classList.add('on');
+  });
+}
+function openEditSim(id){
+  editCol='sims';editId=id;
+  db.collection('sims').doc(id).get().then(doc=>{
+    const r=doc.data();
+    document.getElementById('editTitle').textContent='Edit SIM Card';
+    document.getElementById('editBody').innerHTML=`<div class="fg">
+      <div class="f"><label>IoT/ICCID</label><input id="e_iot" value="${r.iot||''}"></div>
+      <div class="f"><label>Provider</label><select id="e_provider">${sel(['Safaricom','Airtel Kenya','Telkom Kenya','MTN','Vodacom','Other'],r.provider)}</select></div>
+      <div class="f"><label>Assigned Radio</label><input id="e_assigned" value="${r.assigned||''}"></div>
+      <div class="f"><label>Activation Date</label><input type="date" id="e_date" value="${r.date||''}"></div>
+      <div class="f"><label>Status</label><select id="e_status">${sel(['active','inactive','reserved'],r.status)}</select></div>
+      <div class="f"><label>Notes</label><textarea id="e_notes">${r.notes||''}</textarea></div>
+    </div>`;
+    document.getElementById('editModal').classList.add('on');
+  });
+}
+function openEditInvoice(id){
+  editCol='invoices';editId=id;
+  db.collection('invoices').doc(id).get().then(doc=>{
+    const r=doc.data();
+    document.getElementById('editTitle').textContent='Edit Invoice';
+    document.getElementById('editBody').innerHTML=`<div class="fg">
+      <div class="f"><label>Client</label><input id="e_client" value="${r.client||''}"></div>
+      <div class="f"><label>Amount (KES)</label><input type="number" id="e_amount" value="${r.amount||''}"></div>
+      <div class="f"><label>Due Date</label><input type="date" id="e_due" value="${r.due||''}"></div>
+      <div class="f"><label>Status</label><select id="e_status">${sel(['unpaid','paid','partial'],r.status)}</select></div>
+      <div class="f"><label>Description</label><textarea id="e_desc">${r.description||''}</textarea></div>
+    </div>`;
+    document.getElementById('editModal').classList.add('on');
+  });
+}
+function openEditPayable(id){
+  editCol='payables';editId=id;
+  db.collection('payables').doc(id).get().then(doc=>{
+    const r=doc.data();
+    document.getElementById('editTitle').textContent='Edit Payable';
+    document.getElementById('editBody').innerHTML=`<div class="fg">
+      <div class="f"><label>Supplier</label><input id="e_supplier" value="${r.supplier||''}"></div>
+      <div class="f"><label>Amount (KES)</label><input type="number" id="e_amount" value="${r.amount||''}"></div>
+      <div class="f"><label>Due Date</label><input type="date" id="e_due" value="${r.due||''}"></div>
+      <div class="f"><label>Description</label><input id="e_desc" value="${r.description||''}"></div>
+      <div class="f"><label>Status</label><select id="e_status">${sel(['unpaid','partial','paid'],r.status)}</select></div>
+    </div>`;
+    document.getElementById('editModal').classList.add('on');
+  });
+}
+function openEditReceivable(id){
+  editCol='receivables';editId=id;
+  db.collection('receivables').doc(id).get().then(doc=>{
+    const r=doc.data();
+    document.getElementById('editTitle').textContent='Edit Receivable';
+    document.getElementById('editBody').innerHTML=`<div class="fg">
+      <div class="f"><label>Client</label><input id="e_client" value="${r.client||''}"></div>
+      <div class="f"><label>Amount (KES)</label><input type="number" id="e_amount" value="${r.amount||''}"></div>
+      <div class="f"><label>Due Date</label><input type="date" id="e_due" value="${r.due||''}"></div>
+      <div class="f"><label>Description</label><input id="e_desc" value="${r.description||''}"></div>
+      <div class="f"><label>Status</label><select id="e_status">${sel(['unpaid','partial','paid'],r.status)}</select></div>
+    </div>`;
+    document.getElementById('editModal').classList.add('on');
+  });
+}
+function openEditPayroll(id){
+  editCol='payroll';editId=id;
+  db.collection('payroll').doc(id).get().then(doc=>{
+    const r=doc.data();
+    document.getElementById('editTitle').textContent='Edit Payroll';
+    document.getElementById('editBody').innerHTML=`<div class="fg">
+      <div class="f"><label>Staff Name</label><input id="e_name" value="${r.name||''}"></div>
+      <div class="f"><label>Role</label><input id="e_role" value="${r.role||''}"></div>
+      <div class="f"><label>Gross (KES)</label><input type="number" id="e_gross" value="${r.gross||''}"></div>
+      <div class="f"><label>Deductions (KES)</label><input type="number" id="e_deduct" value="${r.deductions||0}"></div>
+      <div class="f"><label>Period</label><input id="e_period" value="${r.period||''}"></div>
+      <div class="f"><label>Pay Date</label><input type="date" id="e_date" value="${r.date||''}"></div>
+      <div class="f"><label>Status</label><select id="e_status">${sel(['paid','unpaid'],r.status)}</select></div>
+    </div>`;
+    document.getElementById('editModal').classList.add('on');
+  });
+}
+
+function saveEdit(){
+  let data={};
+  const g=id=>document.getElementById(id)?.value||'';
+  if(editCol==='repairs') data={type:g('e_type'),serial:g('e_serial').trim(),arrival:g('e_arrival'),returnDate:g('e_return'),client:g('e_client').trim(),details:g('e_details').trim(),status:g('e_status')};
+  else if(editCol==='sales') data={type:g('e_type'),serial:g('e_serial').trim(),date:g('e_date'),client:g('e_client').trim(),amount:Number(g('e_amount')),payment:g('e_payment')};
+  else if(editCol==='sims') data={iot:g('e_iot').trim(),provider:g('e_provider'),assigned:g('e_assigned').trim(),date:g('e_date'),status:g('e_status'),notes:g('e_notes').trim()};
+  else if(editCol==='invoices') data={client:g('e_client').trim(),amount:Number(g('e_amount')),due:g('e_due'),status:g('e_status'),description:g('e_desc').trim()};
+  else if(editCol==='payables') data={supplier:g('e_supplier').trim(),amount:Number(g('e_amount')),due:g('e_due'),description:g('e_desc').trim(),status:g('e_status')};
+  else if(editCol==='receivables') data={client:g('e_client').trim(),amount:Number(g('e_amount')),due:g('e_due'),description:g('e_desc').trim(),status:g('e_status')};
+  else if(editCol==='payroll'){const gr=Number(g('e_gross'));const de=Number(g('e_deduct'));data={name:g('e_name').trim(),role:g('e_role').trim(),gross:gr,deductions:de,net:gr-de,period:g('e_period').trim(),date:g('e_date'),status:g('e_status')};}
+  db.collection(editCol).doc(editId).update(data)
+    .then(()=>{closeModal();toast('Record updated!');})
+    .catch(err=>toast(err.message,'err'));
+}
+
+// ══════════════════════════════════════════════════════
+//  RADIO HISTORY SEARCH
+// ══════════════════════════════════════════════════════
+function searchRadio(){
+  const serial=document.getElementById('radioSearch').value.trim();
+  if(!serial){toast('Enter a serial number','err');return;}
+  const res=document.getElementById('radioResult');
+  res.innerHTML=`<div style="color:var(--muted);padding:20px">Searching…</div>`;
+  Promise.all([
+    db.collection('repairs').where('serial','==',serial).orderBy('createdAt','asc').get(),
+    db.collection('sales').where('serial','==',serial).orderBy('createdAt','asc').get()
+  ]).then(([repSnap,saleSnap])=>{
+    const repairs=repSnap.docs.map(d=>({...d.data(),_type:'repair'}));
+    const sales=saleSnap.docs.map(d=>({...d.data(),_type:'sale'}));
+    if(repairs.length===0&&sales.length===0){
+      res.innerHTML=`<div class="form-card" style="color:var(--muted);text-align:center;padding:40px">No records found for serial: <strong style="color:var(--white)">${serial}</strong></div>`;
+      return;
+    }
+    // Sort all by date
+    const all=[...repairs,...sales].sort((a,b)=>{
+      const da=a.arrival||a.date||'';const db2=b.arrival||b.date||'';
+      return da.localeCompare(db2);
+    });
+    res.innerHTML=`
+      <div class="form-card">
+        <h4 style="color:var(--orange)">📡 Serial: ${serial}</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0">
+          <div class="stat-card blue"><div class="stat-label">Repair Records</div><div class="stat-val">${repairs.length}</div></div>
+          <div class="stat-card green"><div class="stat-label">Sale Records</div><div class="stat-val">${sales.length}</div></div>
+          <div class="stat-card yellow"><div class="stat-label">Total Events</div><div class="stat-val">${all.length}</div></div>
+        </div>
+        <h4 style="margin-bottom:12px">Full History Timeline</h4>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Date</th><th>Event</th><th>Details</th><th>Status / Payment</th><th>Client</th></tr></thead>
+          <tbody>
+            ${all.map(r=>{
+              if(r._type==='repair') return`<tr>
+                <td>${r.arrival||'-'}</td>
+                <td>${badge('in-progress','🔧 REPAIR')}</td>
+                <td style="max-width:200px;white-space:normal;font-size:12px">${r.details||'-'}</td>
+                <td>${statusBadge(r.status||'pending')}</td>
+                <td>${r.client||'-'}</td></tr>`;
+              else return`<tr>
+                <td>${r.date||'-'}</td>
+                <td>${badge('active','💰 SALE')}</td>
+                <td>Invoice: ${r.invoiceNo||'—'} | KES ${fmt(r.amount)}</td>
+                <td>${statusBadge(r.payment||'unpaid')}</td>
+                <td>${r.client||'-'}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table></div>
+      </div>`;
+  }).catch(err=>{res.innerHTML=`<div style="color:#f87171;padding:20px">${err.message}</div>`;});
+}
+
+// ══════════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════════
+function loadDashboard(){
+  const totalSales=allSales.reduce((s,r)=>s+Number(r.amount||0),0);
+  const pendingRepairs=allRepairs.filter(r=>r.status==='pending').length;
+  const inProgress=allRepairs.filter(r=>r.status==='in-progress').length;
+  const completed=allRepairs.filter(r=>r.status==='completed').length;
+  const totalIncome=allTx.filter(r=>r.type==='income').reduce((s,r)=>s+Number(r.amount||0),0);
+  const totalExpense=allTx.filter(r=>r.type==='expense').reduce((s,r)=>s+Number(r.amount||0),0);
+  document.getElementById('dashStats').innerHTML=`
+    <div class="stat-card red"><div class="stat-label">Total Sales Revenue</div><div class="stat-val">KES ${fmt(totalSales)}</div><div class="stat-sub">${allSales.length} sales</div></div>
+    <div class="stat-card blue"><div class="stat-label">Pending Repairs</div><div class="stat-val">${pendingRepairs}</div><div class="stat-sub">${inProgress} in progress</div></div>
+    <div class="stat-card green"><div class="stat-label">Completed Repairs</div><div class="stat-val">${completed}</div><div class="stat-sub">of ${allRepairs.length} total</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Total Income</div><div class="stat-val">KES ${fmt(totalIncome)}</div><div class="stat-sub">recorded transactions</div></div>
+    <div class="stat-card purple"><div class="stat-label">Total Expenses</div><div class="stat-val">KES ${fmt(totalExpense)}</div><div class="stat-sub">net: KES ${fmt(totalIncome-totalExpense)}</div></div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════
+//  FINANCE STATS
+// ══════════════════════════════════════════════════════
+function loadFinanceStats(){
+  const totalIncome=allTx.filter(r=>r.type==='income').reduce((s,r)=>s+Number(r.amount||0),0);
+  const totalExpense=allTx.filter(r=>r.type==='expense').reduce((s,r)=>s+Number(r.amount||0),0);
+  const totalPayable=allPayables.filter(r=>r.status!=='paid').reduce((s,r)=>s+Number(r.amount||0),0);
+  const totalReceivable=allReceivables.filter(r=>r.status!=='paid').reduce((s,r)=>s+Number(r.amount||0),0);
+  const today=new Date().toISOString().split('T')[0];
+  const overduePayables=allPayables.filter(r=>r.status!=='paid'&&r.due&&r.due<today).length;
+  const overdueReceivables=allReceivables.filter(r=>r.status!=='paid'&&r.due&&r.due<today).length;
+  document.getElementById('finStats').innerHTML=`
+    <div class="stat-card green"><div class="stat-label">Total Income</div><div class="stat-val">KES ${fmt(totalIncome)}</div></div>
+    <div class="stat-card red"><div class="stat-label">Total Expenses</div><div class="stat-val">KES ${fmt(totalExpense)}</div></div>
+    <div class="stat-card ${totalIncome-totalExpense>=0?'green':'red'}"><div class="stat-label">Net Profit / Loss</div><div class="stat-val" style="color:${totalIncome-totalExpense>=0?'#4ade80':'#f87171'}">KES ${fmt(totalIncome-totalExpense)}</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Accounts Payable</div><div class="stat-val">KES ${fmt(totalPayable)}</div><div class="stat-sub">${overduePayables} overdue</div></div>
+    <div class="stat-card blue"><div class="stat-label">Accounts Receivable</div><div class="stat-val">KES ${fmt(totalReceivable)}</div><div class="stat-sub">${overdueReceivables} overdue</div></div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════
+//  P&L REPORT
+// ══════════════════════════════════════════════════════
+function buildPL(){
+  const from=document.getElementById('plFrom').value;
+  const to=document.getElementById('plTo').value;
+  const txFiltered=allTx.filter(r=>{
+    if(from&&r.date<from)return false;
+    if(to&&r.date>to)return false;
+    return true;
+  });
+  const incomeItems=txFiltered.filter(r=>r.type==='income');
+  const expenseItems=txFiltered.filter(r=>r.type==='expense');
+  // Group by category
+  const incByCat={};incomeItems.forEach(r=>{incByCat[r.category]=(incByCat[r.category]||0)+Number(r.amount||0);});
+  const expByCat={};expenseItems.forEach(r=>{expByCat[r.category]=(expByCat[r.category]||0)+Number(r.amount||0);});
+  const totalInc=incomeItems.reduce((s,r)=>s+Number(r.amount||0),0);
+  const totalExp=expenseItems.reduce((s,r)=>s+Number(r.amount||0),0);
+  const net=totalInc-totalExp;
+  const period=from&&to?`${from} to ${to}`:from?`From ${from}`:to?`To ${to}`:'All Time';
+  document.getElementById('plBody').innerHTML=`
+    <tr><th colspan="2" style="font-size:14px;color:var(--white);padding:16px">Profit & Loss Report — ${period}</th></tr>
+    <tr><th colspan="2" style="color:var(--green)">INCOME</th></tr>
+    ${Object.entries(incByCat).map(([cat,amt])=>`<tr><td style="padding-left:24px">${cat}</td><td style="text-align:right;color:#4ade80">KES ${fmt(amt)}</td></tr>`).join('')}
+    <tr><td class="pl-total">TOTAL INCOME</td><td class="pl-total" style="text-align:right;color:#4ade80">KES ${fmt(totalInc)}</td></tr>
+    <tr><td colspan="2" style="height:10px;background:none"></td></tr>
+    <tr><th colspan="2" style="color:#f87171">EXPENSES</th></tr>
+    ${Object.entries(expByCat).map(([cat,amt])=>`<tr><td style="padding-left:24px">${cat}</td><td style="text-align:right;color:#f87171">KES ${fmt(amt)}</td></tr>`).join('')}
+    <tr><td class="pl-total">TOTAL EXPENSES</td><td class="pl-total" style="text-align:right;color:#f87171">KES ${fmt(totalExp)}</td></tr>
+    <tr><td colspan="2" style="height:10px;background:none"></td></tr>
+    <tr style="background:rgba(255,255,255,0.05)">
+      <td class="pl-total" style="font-size:16px">NET ${net>=0?'PROFIT':'LOSS'}</td>
+      <td class="${net>=0?'pl-profit':'pl-loss'}" style="text-align:right;font-size:16px">KES ${fmt(Math.abs(net))}</td>
+    </tr>
+  `;
+}
+
+function exportPL(){
+  const rows=[['Category','Amount (KES)']];
+  document.querySelectorAll('#plBody tr').forEach(tr=>{
+    const cells=[...tr.querySelectorAll('td,th')].map(c=>c.textContent.trim());
+    if(cells.length===2)rows.push(cells);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'P&L');
+  XLSX.writeFile(wb,`Twocan_PL_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+// ══════════════════════════════════════════════════════
+//  EXPORT TO EXCEL
+// ══════════════════════════════════════════════════════
+function exportTable(tableId,name){
+  const tbl=document.getElementById(tableId);
+  if(!tbl){toast('Nothing to export','err');return;}
+  const ws=XLSX.utils.table_to_sheet(tbl);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,name);
+  XLSX.writeFile(wb,`Twocan_${name}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  toast(`${name} exported to Excel!`);
+}
+
+function closeRadioModal(){document.getElementById('radioModal').classList.remove('on');}
+</script>
+</body>
+</html>
